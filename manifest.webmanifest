@@ -1,0 +1,22 @@
+{
+  "name": "Study",
+  "short_name": "Study",
+  "description": "Feed, study and desk sessions for a self-directed maths and ML curriculum.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef1ef",
+  "theme_color": "#eef1ef",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Feed", "url": "./#feed" },
+    { "name": "Desk", "url": "./#desk" },
+    { "name": "Papers", "url": "./#papers" }
+  ]
+}

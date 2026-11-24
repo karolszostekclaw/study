@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plan</title>
+<style>
+/* Plan: the week-by-week schedule from the private repo (app-data/content/schedule.json).
+   Dates are worked out here: each week is 7 study days; breaks and delays are days that don't count. */
+:root {
+  --bg: #eef1ef; --surface: #fbfcfb; --ink: #17201c; --muted: #56645d; --line: #d3dbd6;
+  --accent: #2a55c9; --good: #1b7449; --warn: #96700f; --bad: #b3372f; --tint: rgba(42, 85, 201, .07);
+  --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933; --accent: #93b1ff; --good: #72cf98; --warn: #e3c46b; --bad: #f08b7f; --tint: rgba(147, 177, 255, .08); }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-ui); -webkit-text-size-adjust: 100%; }
+body { padding: 0 max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+button { font: inherit; color: inherit; cursor: pointer; }
+:is(button, summary, input):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.wrap { max-width: 40rem; margin: 0 auto; display: grid; gap: 14px; }
+
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 16px 0 6px; border-bottom: 1px solid var(--line); }
+.top h1 { font-size: 1.3rem; margin: 0; }
+.top h1 i { font-weight: 400; color: var(--muted); font-style: normal; }
+.sync { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.eyebrow { font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; }
+.panel h2 { font-size: 1.1rem; margin: 0; }
+.dates { color: var(--muted); font-size: .88rem; margin: 0; }
+.note { color: var(--muted); font-size: .84rem; margin: 0; }
+.warn { color: var(--warn); }
+.bad { color: var(--bad); }
+
+.track { display: grid; gap: 6px; }
+.track h3 { font-family: var(--f-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 4px 0 0; }
+.track h3 span { text-transform: none; letter-spacing: 0; font-family: var(--f-ui); font-size: .76rem; }
+.item { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.item input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--good); }
+.item label { cursor: pointer; }
+.item.done label > span:first-child { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.item.ckpt { border-color: var(--accent); background: var(--tint); }
+.item small { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; }
+
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.btn.quiet { border-color: transparent; color: var(--muted); padding-inline: 6px; }
+.btn:disabled { opacity: .45; cursor: default; }
+
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fact { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.fact b { display: block; font-size: 1rem; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: .74rem; }
+
+.overdue summary { cursor: pointer; font-size: .9rem; }
+.overdue ul { margin: 8px 0 0; padding-left: 18px; display: grid; gap: 4px; font-size: .86rem; }
+
+/* timeline */
+.month { font-family: var(--f-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 14px 0 6px; }
+.tl { display: grid; gap: 6px; }
+details.wk { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+details.wk[open] { padding-bottom: 10px; }
+details.wk > summary { list-style: none; display: grid; grid-template-columns: 2.6rem 1fr auto; gap: 8px; align-items: center; padding: 9px 10px; cursor: pointer; }
+details.wk > summary::-webkit-details-marker { display: none; }
+details.wk .n { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+details.wk .t { min-width: 0; }
+details.wk .t b { font-weight: 500; }
+details.wk .t span { display: block; color: var(--muted); font-size: .78rem; }
+details.wk .p { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+details.wk.past:not(.complete) .p { color: var(--warn); }
+details.wk.complete .p { color: var(--good); }
+details.wk.now { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+details.wk.ck .t b::after { content: " · exam"; color: var(--accent); font-weight: 400; font-size: .8rem; }
+details.wk .track { padding: 0 10px; }
+.gap { display: flex; gap: 8px; align-items: baseline; padding: 6px 10px; border: 1px dashed var(--line); border-radius: 10px; font-size: .84rem; color: var(--muted); }
+.gap b { font-weight: 500; color: var(--ink); }
+.gap.delay b { color: var(--warn); }
+
+.later { display: grid; gap: 10px; }
+
+/* view switch */
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: none; padding: 7px; border-radius: 8px; color: var(--muted); }
+.seg button[aria-selected="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
+
+/* progress report: built to be screenshotted */
+.rep { display: grid; gap: 12px; }
+.rep .hero h2 { font-size: 1.25rem; }
+.rep .who { font-weight: 600; }
+.bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--good); }
+.bar.big { height: 14px; }
+.pct { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .9rem; }
+.pct b { font-variant-numeric: tabular-nums; font-size: 1.6rem; }
+.pct span, .part .c { color: var(--muted); font-variant-numeric: tabular-nums; }
+.area h3 { font-size: 1rem; margin: 0; display: flex; justify-content: space-between; gap: 8px; }
+.area h3 span { color: var(--muted); font-weight: 400; font-size: .85rem; font-variant-numeric: tabular-nums; }
+.part { display: grid; gap: 5px; padding-top: 4px; }
+.part .row { display: flex; justify-content: space-between; gap: 10px; font-size: .88rem; }
+.chk { list-style: none; margin: 2px 0 4px; padding: 0; display: grid; gap: 3px; font-size: .82rem; }
+.chk li { display: grid; grid-template-columns: 1.2rem 1fr; color: var(--muted); }
+.chk li.y { color: var(--ink); }
+.chk li::before { content: "○"; color: var(--muted); }
+.chk li.y::before { content: "✓"; color: var(--good); font-weight: 700; }
+.opts { display: grid; gap: 8px; }
+.opts label { display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+.opts input[type=text] { font: inherit; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.foot { color: var(--muted); font-size: .76rem; text-align: center; margin: 0; }
+.later ul { margin: 0; padding-left: 18px; font-size: .88rem; display: grid; gap: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Plan <i id="sub">· week by week</i></h1>
+    <span class="sync" id="sync">Saved on this device</span>
+  </header>
+  <div class="seg" role="tablist" aria-label="View">
+    <button role="tab" data-view="plan" aria-selected="true">Schedule</button>
+    <button role="tab" data-view="report" aria-selected="false">Progress</button>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script src="bridge.js"></script>
+<script>
+Bridge.start(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const S = Bridge.content.schedule;
+const app = $('#app');
+
+if (!S || !Array.isArray(S.weeks)) {
+  app.innerHTML = `<div class="panel"><h2>No schedule yet</h2><p class="note">The plan lives in your private repo at <code>app-data/content/schedule.json</code>. Load it once you're online.</p><div class="btns"><button class="btn primary" id="load">Load the plan</button></div><p class="note" id="lmsg"></p></div>`;
+  $('#load').onclick = async () => {
+    $('#lmsg').textContent = 'Loading…';
+    try { await Bridge.hub.fetchContent(); location.reload(); } catch (e) { $('#lmsg').textContent = e.message; }
+  };
+  return;
+}
+
+/* ---------- dates: plain 'YYYY-MM-DD' strings, arithmetic in UTC so DST never shifts a day ---------- */
+const toN = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5;
+const toS = n => new Date(n * 864e5).toISOString().slice(0, 10);
+const todayS = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DOW = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue', 'Wed'];   // day 0 of the epoch was a Thursday
+const dd = n => { const d = new Date(n * 864e5); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]}`; };
+const ddy = n => { const d = new Date(n * 864e5); return `${d.getUTCDate()} ${MON[d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+const dow = n => DOW[((n % 7) + 7) % 7];
+const range = (a, b) => a === b ? `${dow(a)} ${dd(a)}` : `${dow(a)} ${dd(a)} – ${dow(b)} ${dd(b)}`;
+
+/* ---------- state: ticks and delays, synced as app-data/plan.json ---------- */
+const LS = 'study-plan-v1';
+const blank = () => ({ done: {}, delays: [], updatedAt: 0 });
+let st = blank();
+try { st = Object.assign(blank(), JSON.parse(localStorage.getItem(LS) || 'null') || {}); } catch (e) {}
+let db = null;
+const setSync = t => { $('#sync').textContent = t; };
+function save() {
+  st.updatedAt = Date.now();
+  try { localStorage.setItem(LS, JSON.stringify(st)); } catch (e) {}
+  if (db) db.doc('plan').set({ updatedAt: st.updatedAt, delayDays: st.delays.reduce((a, d) => a + d.days, 0), json: JSON.stringify(st) })
+    .then(() => setSync('Saved · syncing to your private repo')).catch(() => setSync('Saved on this device; repo sync will retry'));
+}
+
+// Papers tab: a paper marked done there counts as ticked here.
+function paperDone(slug) {
+  try { const r = (JSON.parse(localStorage.getItem('study-papers-v1') || '{}') || {})[slug]; return !!(r && r.status === 'done'); } catch (e) { return false; }
+}
+const isDone = it => !!st.done[it.id] || (it.paper && paperDone(it.paper));
+
+/* ---------- layout: 7 study days a week; break and delay days don't count ---------- */
+function layout(delays) {
+  const off = new Map();
+  (S.breaks || []).forEach(b => { for (let n = toN(b.from); n <= toN(b.to); n++) off.set(n, { kind: 'break', label: b.label, note: b.note || '' }); });
+  delays.slice().sort((a, b) => a.addedAt - b.addedAt).forEach(d => {
+    let n = toN(d.at), left = d.days;
+    while (left > 0) { if (!off.has(n)) { off.set(n, { kind: 'delay', label: 'Delayed' }); left--; } n++; }
+  });
+  const weeks = [], rows = [];
+  let n = toN(S.start), gap = null;
+  const closeGap = () => { if (gap) { rows.push(gap); gap = null; } };
+  for (const w of S.weeks) {
+    let got = 0, from = null, to = null;
+    const row = { type: 'week', w };
+    while (got < 7) {
+      const o = off.get(n);
+      if (o) {
+        if (gap && gap.kind === o.kind && gap.label === o.label && gap.to === n - 1) gap.to = n;
+        else { closeGap(); gap = { type: 'gap', kind: o.kind, label: o.label, note: o.note, from: n, to: n }; }
+      } else {
+        if (got === 0) { closeGap(); rows.push(row); }
+        if (from == null) from = n;
+        to = n; got++;
+      }
+      n++;
+    }
+    row.from = from; row.to = to;
+    weeks.push(row);
+  }
+  // trailing break/delay days right after the last week are not part of the plan
+  return { weeks, rows, end: weeks[weeks.length - 1].to, off };
+}
+
+/* ---------- render ---------- */
+const TRACKS = S.tracks || {};
+const ORDER = ['book', 'sat', 'work', 'mile'];
+let openWeek = null;   // week number expanded in the timeline
+
+function itemHtml(it, today, wTo) {
+  const done = isDone(it), auto = !st.done[it.id] && done;
+  const late = !done && wTo < today;
+  return `<div class="item${done ? ' done' : ''}${it.kind === 'checkpoint' ? ' ckpt' : ''}">
+    <input type="checkbox" id="c-${esc(it.id)}" data-id="${esc(it.id)}" ${done ? 'checked' : ''} ${auto ? 'disabled' : ''}>
+    <label for="c-${esc(it.id)}"><span>${esc(it.text)}</span>${it.note ? `<small>${esc(it.note)}</small>` : ''}${auto ? '<small>Done in Papers</small>' : ''}${late ? '<small class="warn">From an earlier week</small>' : ''}</label>
+  </div>`;
+}
+function tracksHtml(w, today, wTo) {
+  return ORDER.map(k => {
+    const its = w.items.filter(i => i.track === k);
+    if (!its.length) return '';
+    const t = TRACKS[k] || { label: k };
+    return `<div class="track"><h3>${esc(t.label)}${t.hours ? ` <span>· ${esc(t.hours)}</span>` : ''}</h3>${its.map(i => itemHtml(i, today, wTo)).join('')}</div>`;
+  }).join('');
+}
+
+function renderPlan() {
+  const today = toN(todayS());
+  const L = layout(st.delays);
+  const P = layout([]);
+  const delayDays = st.delays.reduce((a, d) => a + d.days, 0);
+  const cur = L.weeks.find(r => today >= r.from && today <= r.to);
+  const next = L.weeks.find(r => r.from > today);
+  const offToday = L.off.get(today);
+  const shown = cur || next || L.weeks[L.weeks.length - 1];
+  const total = S.weeks.length;
+
+  const overdue = [];
+  L.weeks.forEach(r => { if (r.to < today) r.w.items.forEach(it => { if (!isDone(it)) overdue.push({ it, n: r.w.n }); }); });
+
+  $('#sub').textContent = cur ? `· week ${cur.w.n} of ${total}` : next && today < L.weeks[0].from ? '· starts soon' : next ? `· ${offToday && offToday.kind === 'delay' ? 'delayed' : 'on a break'}` : '· Phase 1 done';
+
+  let h = '';
+  // ---- this week
+  const w = shown.w;
+  const head = cur ? 'This week' : next ? (today < L.weeks[0].from ? 'First week' : 'Next week') : 'Last week of Phase 1';
+  let resume = today; while (L.off.has(resume)) resume++;
+  const pause = offToday && resume <= L.end ? `<p class="note warn">${offToday.kind === 'delay' ? 'Delay day' : esc(offToday.label)}: the plan picks up again on ${dow(resume)} ${dd(resume)}.${offToday.note ? ' ' + esc(offToday.note) : ''}</p>` : '';
+  const doneN = w.items.filter(isDone).length;
+  h += `<section class="panel" aria-label="${head}">
+    <p class="eyebrow">${head} · week ${w.n} · ${esc(w.block)}</p>
+    <h2>${esc(w.title)}</h2>
+    <p class="dates">${range(shown.from, shown.to)} · ${doneN}/${w.items.length} done</p>
+    ${pause}
+    ${tracksHtml(w, today, shown.to)}
+  </section>`;
+
+  // ---- falling behind + delay controls
+  const last = st.delays[st.delays.length - 1];
+  h += `<section class="panel" aria-label="Schedule">
+    <div class="facts">
+      <div class="fact"><b>${cur ? cur.w.n : next ? next.w.n - 1 : total}/${total}</b><span>weeks in</span></div>
+      <div class="fact"><b>${ddy(L.end).replace(/^\d+ /, '')}</b><span>Phase 1 ends ${dd(L.end)}</span></div>
+      <div class="fact"><b class="${delayDays ? 'warn' : ''}">${delayDays ? '+' + delayDays + ' d' : 'On plan'}</b><span>${delayDays ? `planned end ${dd(P.end)} ${new Date(P.end * 864e5).getUTCFullYear()}` : 'no delays so far'}</span></div>
+    </div>
+    ${overdue.length ? `<details class="overdue"><summary class="warn">${overdue.length} item${overdue.length > 1 ? 's' : ''} from earlier weeks still open</summary><ul>${overdue.map(o => `<li>Week ${o.n}: ${esc(o.it.text)}</li>`).join('')}</ul></details>` : ''}
+    <p class="note">Need more time? A delay starts today and moves this week and everything after it back. Breaks stay on their dates.</p>
+    <div class="btns">
+      <button class="btn primary" data-delay="1">Delay a day</button>
+      <button class="btn primary" data-delay="7">Delay a week</button>
+      <button class="btn quiet" id="undo" ${last ? '' : 'disabled'}>${last ? `Undo last delay (${last.days} d from ${dd(toN(last.at))})` : 'No delay to undo'}</button>
+    </div>
+  </section>`;
+
+  // ---- the whole plan
+  h += `<section aria-label="Whole plan"><p class="eyebrow" style="margin-top:6px">Phase 1, week by week</p><div class="tl">`;
+  let month = '';
+  L.rows.forEach(r => {
+    const m = new Date(r.from * 864e5); const key = MON[m.getUTCMonth()] + ' ' + m.getUTCFullYear();
+    if (key !== month) { month = key; h += `<p class="month">${key}</p>`; }
+    if (r.type === 'gap') {
+      h += `<div class="gap ${r.kind}"><b>${esc(r.label)}</b><span>${range(r.from, r.to)}${r.note ? ' · ' + esc(r.note) : ''}</span></div>`;
+      return;
+    }
+    const wk = r.w, n = wk.items.filter(isDone).length;
+    const cls = ['wk', r.to < today ? 'past' : '', n === wk.items.length ? 'complete' : '', cur && cur.w.n === wk.n ? 'now' : '', wk.items.some(i => i.kind === 'checkpoint') ? 'ck' : ''].filter(Boolean).join(' ');
+    h += `<details class="${cls}" data-n="${wk.n}" ${openWeek === wk.n ? 'open' : ''}>
+      <summary><span class="n">W${wk.n}</span><span class="t"><b>${esc(wk.title)}</b><span>${range(r.from, r.to)}</span></span><span class="p">${n}/${wk.items.length}</span></summary>
+      ${openWeek === wk.n ? tracksHtml(wk, today, r.to) : ''}
+    </details>`;
+  });
+  h += `</div></section>`;
+
+  // ---- after Phase 1
+  if (Array.isArray(S.later) && S.later.length) {
+    let from = L.end + 1;
+    h += `<section class="later" aria-label="After Phase 1"><p class="eyebrow" style="margin-top:10px">After Phase 1 (rough)</p>`;
+    S.later.forEach(b => {
+      const end = b.months ? from + Math.round(b.months * 30.44) : null;
+      h += `<div class="panel"><p class="eyebrow">${esc(b.length)} · from ${MON[new Date(from * 864e5).getUTCMonth()]} ${new Date(from * 864e5).getUTCFullYear()}${end ? ` to about ${MON[new Date(end * 864e5).getUTCMonth()]} ${new Date(end * 864e5).getUTCFullYear()}` : ''}</p>
+        <h2>${esc(b.title)}</h2><p class="note">${esc(b.note)}</p><ul>${b.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+      if (end) from = end + 1;
+    });
+    h += `</section>`;
+  }
+  app.innerHTML = h;
+}
+
+/* ---------- progress report: checklist + bars to share (recruiters, a corporate learning app) ---------- */
+const R = S.report || { title: 'Study plan', areas: [], checkpoints: { prefix: 'ckpt-' } };
+const ROPT = 'study-report-v1';
+let ro = { name: '', scores: true, status: true, lists: false };
+try { ro = Object.assign(ro, JSON.parse(localStorage.getItem(ROPT) || '{}') || {}); } catch (e) {}
+const saveRo = () => { try { localStorage.setItem(ROPT, JSON.stringify(ro)); } catch (e) {} };
+let view = 'plan';
+try { view = localStorage.getItem('study-plan-view') || 'plan'; } catch (e) {}
+
+const ALL = S.weeks.flatMap(w => w.items);
+function deskScores() {
+  // Desk keeps finished checkpoint exams on the device; the k-th checkpoint of a book in the plan is Desk's checkpoint k.
+  let ex = {}; try { ex = JSON.parse(localStorage.getItem('study-desk-exams-v1') || '{}') || {}; } catch (e) {}
+  const out = {}, cp = R.checkpoints || {}, map = cp.desk || {}, seen = {};
+  ALL.filter(i => i.id.startsWith(cp.prefix || 'ckpt-')).forEach(i => {
+    const rest = i.id.slice((cp.prefix || 'ckpt-').length);
+    const pre = Object.keys(map).find(k => rest.startsWith(k)); if (!pre) return;
+    const k = seen[pre] = (seen[pre] || 0) + 1;
+    const x = Object.values(ex).find(z => z && z.book === map[pre] && z.n === k && z.marks && z.status === 'marked');
+    if (x) out[i.id] = x.marks.outOf10;
+  });
+  return out;
+}
+function reportData() {
+  const today = toN(todayS());
+  const L = layout(st.delays), P = layout([]);
+  const scores = deskScores();
+  const areas = R.areas.map(a => {
+    const parts = a.parts.map(pt => {
+      const items = ALL.filter(i => i.id.startsWith(pt.prefix)).map(i => ({ text: i.text, done: isDone(i) }));
+      return { title: pt.title, items, done: items.filter(i => i.done).length, total: items.length };
+    }).filter(pt => pt.total);
+    return { title: a.title, parts, done: parts.reduce((x, p) => x + p.done, 0), total: parts.reduce((x, p) => x + p.total, 0) };
+  });
+  const cps = ALL.filter(i => i.id.startsWith((R.checkpoints || {}).prefix || 'ckpt-')).map(i => ({
+    text: i.text.replace(/^Checkpoint exam, 90 min closed book: /, ''), done: isDone(i) || scores[i.id] != null, score: scores[i.id]
+  }));
+  const done = areas.reduce((x, a) => x + a.done, 0) + cps.filter(c => c.done).length;
+  const total = areas.reduce((x, a) => x + a.total, 0) + cps.length;
+  const cur = L.weeks.find(r => today >= r.from && today <= r.to);
+  const weekN = cur ? cur.w.n : L.weeks.filter(r => r.to < today).length;
+  // schedule status: compare ticked items with what the planned dates expect by now
+  const expected = P.weeks.filter(r => r.to < today).reduce((x, r) => x + r.w.items.filter(i => R.areas.some(a => a.parts.some(p => i.id.startsWith(p.prefix))) || i.id.startsWith('ckpt-')).length, 0);
+  const lateDays = L.end - P.end;
+  return { areas, cps, done, total, weekN, weeks: S.weeks.length, start: toN(S.start), end: L.end, lateDays, expected, today };
+}
+const pct = (d, t) => t ? Math.round(d / t * 100) : 0;
+const statusLine = D => D.lateDays > 0 ? `${D.lateDays} day${D.lateDays > 1 ? 's' : ''} behind the original schedule` : D.done >= D.expected ? 'On schedule' : `${D.expected - D.done} item${D.expected - D.done > 1 ? 's' : ''} behind schedule`;
+
+function renderReport() {
+  const D = reportData();
+  $('#sub').textContent = '· progress';
+  let h = `<div class="rep">
+  <section class="panel hero">
+    <p class="eyebrow">Progress report · ${ddy(D.today)}</p>
+    <h2>${esc(R.title)}</h2>
+    ${ro.name ? `<p class="who">${esc(ro.name)}</p>` : ''}
+    <p class="note">${esc(R.subtitle || '')}. Phase 1, started ${ddy(D.start)} · week ${D.weekN} of ${D.weeks}, planned to finish ${MON[new Date(D.end * 864e5).getUTCMonth()]} ${new Date(D.end * 864e5).getUTCFullYear()}.</p>
+    <div class="pct"><b>${pct(D.done, D.total)}%</b><span>${D.done} of ${D.total} items done${ro.status ? ' · ' + statusLine(D) : ''}</span></div>
+    <div class="bar big"><i style="width:${pct(D.done, D.total)}%"></i></div>
+  </section>`;
+  D.areas.forEach(a => {
+    h += `<section class="panel area"><h3>${esc(a.title)} <span>${pct(a.done, a.total)}%</span></h3>`;
+    a.parts.forEach(p => {
+      h += `<div class="part"><div class="row"><span>${esc(p.title)}</span><span class="c">${p.done}/${p.total}</span></div><div class="bar"><i style="width:${pct(p.done, p.total)}%"></i></div>
+        ${ro.lists ? `<ul class="chk">${p.items.map(i => `<li class="${i.done ? 'y' : ''}"><span>${esc(i.text)}</span></li>`).join('')}</ul>` : ''}</div>`;
+    });
+    h += `</section>`;
+  });
+  const cdone = D.cps.filter(c => c.done).length;
+  h += `<section class="panel area"><h3>Checkpoint exams <span>${cdone}/${D.cps.length}</span></h3>
+    <p class="note">90 minutes, closed book, marked against a fixed rubric. Passing the last one (7/10) ends Phase 1.</p>
+    <ul class="chk">${D.cps.map(c => `<li class="${c.done ? 'y' : ''}"><span>${esc(c.text)}${ro.scores && c.score != null ? ` · <b>${c.score}/10</b>` : ''}</span></li>`).join('')}</ul></section>
+  <p class="foot">Generated from my study plan on ${ddy(D.today)}</p>
+  <section class="panel opts" aria-label="Share">
+    <p class="eyebrow">Share</p>
+    <label style="display:grid;gap:4px">Name on the report<input type="text" id="r-name" value="${esc(ro.name)}" placeholder="Your name (optional)" autocomplete="off"></label>
+    <label><input type="checkbox" id="r-lists" ${ro.lists ? 'checked' : ''}> Show the full checklist under each bar</label>
+    <label><input type="checkbox" id="r-scores" ${ro.scores ? 'checked' : ''}> Show checkpoint scores</label>
+    <label><input type="checkbox" id="r-status" ${ro.status ? 'checked' : ''}> Show whether I'm on schedule</label>
+    <div class="btns">
+      <button class="btn primary" id="r-img">Share as image</button>
+      <button class="btn" id="r-md">Copy as text</button>
+      <button class="btn" id="r-share">Share text…</button>
+    </div>
+    <p class="note" id="r-msg">Only the plan, ticks and scores go in: no notes, solutions or work material. Promo items and to-dos are left out.</p>
+  </section></div>`;
+  app.innerHTML = h;
+}
+
+function reportMarkdown() {
+  const D = reportData();
+  const tbar = (d, t) => { const n = Math.round(pct(d, t) / 10); return '█'.repeat(n) + '░'.repeat(10 - n); };
+  const L = [`# ${R.title}: progress`, ''];
+  L.push(`${ro.name ? ro.name + ' · ' : ''}${ddy(D.today)} · Phase 1, week ${D.weekN} of ${D.weeks} (started ${ddy(D.start)})`, '');
+  L.push(`**Overall: ${pct(D.done, D.total)}%** (${D.done} of ${D.total} items)${ro.status ? ' · ' + statusLine(D) : ''}`, '');
+  D.areas.forEach(a => {
+    L.push(`## ${a.title} (${pct(a.done, a.total)}%)`, '');
+    a.parts.forEach(p => {
+      L.push(`- ${p.title}: ${tbar(p.done, p.total)} ${p.done}/${p.total}`);
+      if (ro.lists) p.items.forEach(i => L.push(`  - [${i.done ? 'x' : ' '}] ${i.text}`));
+    });
+    L.push('');
+  });
+  L.push(`## Checkpoint exams (${D.cps.filter(c => c.done).length}/${D.cps.length})`, '', '90 minutes, closed book, fixed rubric. Phase 1 ends at 7/10 on the last one.', '');
+  D.cps.forEach(c => L.push(`- [${c.done ? 'x' : ' '}] ${c.text}${ro.scores && c.score != null ? `: ${c.score}/10` : ''}`));
+  return L.join('\n') + '\n';
+}
+
+function reportImage() {
+  // A 1080-wide card with the bars, drawn by hand so it looks the same on every phone.
+  const D = reportData();
+  const W = 1080, pad = 64, C = { bg: '#f4f6f4', card: '#ffffff', ink: '#17201c', muted: '#5d6b64', line: '#dde4df', good: '#1b7449' };
+  const rows = [];
+  D.areas.forEach(a => { rows.push({ head: a.title, d: a.done, t: a.total }); a.parts.forEach(p => rows.push({ label: p.title, d: p.done, t: p.total })); });
+  const sc = D.cps.filter(c => c.score != null).map(c => c.score);
+  rows.push({ head: 'Checkpoint exams', d: D.cps.filter(c => c.done).length, t: D.cps.length, avg: ro.scores && sc.length ? Math.round(sc.reduce((a, b) => a + b, 0) / sc.length * 10) / 10 : null });
+  const H = 450 + rows.reduce((y, r) => y + (r.head ? 78 : 74), 0) + 80;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const font = (w, px) => `${w} ${px}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+  const bar = (x, y, w, h, f) => { g.fillStyle = C.line; rr(x, y, w, h); g.fillStyle = C.good; if (f > 0) rr(x, y, Math.max(h, w * f), h); };
+  const rr = (x, y, w, h) => { const r = h / 2; g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.fill(); };
+  const fit = (t, max) => { if (g.measureText(t).width <= max) return t; while (t.length && g.measureText(t + '…').width > max) t = t.slice(0, -1); return t + '…'; };
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  g.fillStyle = C.muted; g.font = font(600, 26); g.fillText(`PROGRESS REPORT · ${ddy(D.today).toUpperCase()}`, pad, 90);
+  g.fillStyle = C.ink; g.font = font(700, 52); g.fillText(fit(R.title, W - 2 * pad), pad, 160);
+  g.font = font(500, 30); g.fillStyle = C.muted;
+  g.fillText(fit(`${ro.name ? ro.name + ' · ' : ''}Phase 1, week ${D.weekN} of ${D.weeks} · started ${ddy(D.start)}`, W - 2 * pad), pad, 212);
+  g.fillStyle = C.ink; g.font = font(700, 84); g.fillText(`${pct(D.done, D.total)}%`, pad, 320);
+  g.font = font(500, 30); g.fillStyle = C.muted; g.textAlign = 'right';
+  g.fillText(`${D.done} of ${D.total} items${ro.status ? ' · ' + statusLine(D) : ''}`, W - pad, 316); g.textAlign = 'left';
+  bar(pad, 346, W - 2 * pad, 24, D.total ? D.done / D.total : 0);
+  let y = 430;
+  rows.forEach(r => {
+    if (r.head) {
+      y += 22; g.fillStyle = C.ink; g.font = font(700, 32); g.fillText(r.head, pad, y + 20);
+      g.textAlign = 'right'; g.fillStyle = C.muted; g.font = font(600, 28); g.fillText(r.head === 'Checkpoint exams' ? `${r.d}/${r.t}${r.avg != null ? ` · avg ${r.avg}/10` : ''}` : `${pct(r.d, r.t)}%`, W - pad, y + 20); g.textAlign = 'left';
+      if (r.head === 'Checkpoint exams') { bar(pad, y + 40, W - 2 * pad, 14, r.t ? r.d / r.t : 0); y += 74; } else y += 56;
+    } else {
+      g.fillStyle = C.ink; g.font = font(400, 27); g.fillText(fit(r.label, W - 2 * pad - 110), pad, y + 10);
+      g.textAlign = 'right'; g.fillStyle = C.muted; g.fillText(`${r.d}/${r.t}`, W - pad, y + 10); g.textAlign = 'left';
+      bar(pad, y + 28, W - 2 * pad, 14, r.t ? r.d / r.t : 0); y += 74;
+    }
+  });
+  g.fillStyle = C.muted; g.font = font(400, 24); g.textAlign = 'center'; g.fillText('Self-directed curriculum · generated from my study plan', W / 2, H - 44);
+  return new Promise(res => cv.toBlob(res, 'image/png'));
+}
+
+async function shareOrDownload(blob, name, msg) {
+  const file = new File([blob], name, { type: blob.type });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: R.title }); return; }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.append(a); a.click(); a.remove();
+  msg('Saved the image to your downloads.');
+}
+
+function render() {
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === view)));
+  if (view === 'report') renderReport(); else renderPlan();
+}
+document.querySelector('.seg').addEventListener('click', e => {
+  const b = e.target.closest('[data-view]'); if (!b) return;
+  view = b.dataset.view; try { localStorage.setItem('study-plan-view', view); } catch (er) {}
+  render(); window.scrollTo(0, 0);
+});
+app.addEventListener('input', e => { if (e.target.id === 'r-name') { ro.name = e.target.value; saveRo(); } });
+app.addEventListener('change', e => {
+  const k = { 'r-lists': 'lists', 'r-scores': 'scores', 'r-status': 'status' }[e.target.id];
+  if (k) { ro[k] = e.target.checked; saveRo(); renderReport(); }
+  if (e.target.id === 'r-name') renderReport();
+});
+app.addEventListener('click', async e => {
+  const msg = t => { const m = $('#r-msg'); if (m) m.textContent = t; };
+  const stamp = todayS();
+  if (e.target.closest('#r-img')) {
+    msg('Drawing the image…');
+    try { await shareOrDownload(await reportImage(), `study-progress-${stamp}.png`, msg); msg('Image ready.'); } catch (er) { msg('Could not make the image: ' + er.message); }
+  } else if (e.target.closest('#r-md')) {
+    try { await navigator.clipboard.writeText(reportMarkdown()); msg('Copied. Paste it into a message, a doc or your learning app.'); }
+    catch (er) { msg('Copying was blocked here. Use Share text instead.'); }
+  } else if (e.target.closest('#r-share')) {
+    const text = reportMarkdown();
+    try { if (navigator.share) { await navigator.share({ title: R.title, text }); return; } } catch (er) { if (er && er.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); msg('Sharing isn\'t available here, so the report was copied instead.'); } catch (er) { msg('Sharing isn\'t available here.'); }
+  }
+});
+
+/* ---------- events ---------- */
+app.addEventListener('change', e => {
+  const c = e.target.closest('input[type=checkbox][data-id]'); if (!c) return;
+  if (c.checked) st.done[c.dataset.id] = Date.now(); else delete st.done[c.dataset.id];
+  save(); render();
+});
+app.addEventListener('click', e => {
+  const d = e.target.closest('[data-delay]');
+  if (d) { st.delays.push({ at: todayS(), days: +d.dataset.delay, addedAt: Date.now() }); save(); render(); return; }
+  if (e.target.closest('#undo')) { st.delays.pop(); save(); render(); return; }
+  const s = e.target.closest('details.wk > summary');
+  if (s) {
+    e.preventDefault();
+    const n = +s.parentElement.dataset.n;
+    openWeek = openWeek === n ? null : n;
+    render();
+    const el = app.querySelector(`details.wk[data-n="${n}"]`); if (el && openWeek) el.scrollIntoView({ block: 'nearest' });
+  }
+});
+
+render();
+
+(async () => {
+  try {
+    const d = await window.claude.use('db'); if (!d) return;
+    const snap = await d.doc('plan').get();
+    const v = snap.exists ? snap.data() : null;
+    if (v && v.json && (v.updatedAt || 0) > (st.updatedAt || 0)) {
+      try { st = Object.assign(blank(), JSON.parse(v.json)); localStorage.setItem(LS, JSON.stringify(st)); render(); } catch (e) {}
+    }
+    db = d; setSync('Saved · syncing to your private repo');
+  } catch (e) { setSync('Saved on this device'); }
+})();
+// Ticks made in Papers show up when you come back to this tab.
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') render(); });
+window.__planRender = render;
+window.__planLayout = layout;
+window.__report = { md: () => reportMarkdown(), img: () => reportImage() };
+});
+</script>
+</body>
+</html>

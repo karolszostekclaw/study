@@ -1,0 +1,833 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Feed</title><meta name="theme-color" content="#fbfaf7"><style>.embedded .tabs{display:none!important}</style></head><body>
+<title>Lemma Feed</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
+<style>
+/* Layout: one-screen app. Full-height snap feed of chalkboard/whiteboard cards, tab bar at the bottom. */
+:root {
+  --bg: #eef1ef;
+  --surface: #fbfcfb;
+  --ink: #17201c;
+  --muted: #56645d;
+  --line: #d3dbd6;
+  --accent: #2a55c9;
+  --accent-ink: #ffffff;
+  --good: #1b7449;
+  --bad: #b3372f;
+  --t-la: #2a55c9; --t-ca: #b8561c; --t-pr: #1b7449; --t-op: #7440bd; --t-ml: #0e7580;
+  --t-it: #96700f; --t-dl: #b92f58; --t-ph: #2a73a8; --t-fi: #66631a;
+  --f-display: "Literata", Georgia, "Times New Roman", serif;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933;
+    --accent: #e8cd6b; --accent-ink: #1d1b0e; --good: #72cf98; --bad: #f08b7f;
+    --t-la: #93b1ff; --t-ca: #f1a56f; --t-pr: #7fd3a2; --t-op: #c6a6f3; --t-ml: #6fcfd7;
+    --t-it: #e3c46b; --t-dl: #f08cab; --t-ph: #8ac4ec; --t-fi: #d0cc72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933;
+  --accent: #e8cd6b; --accent-ink: #1d1b0e; --good: #72cf98; --bad: #f08b7f;
+  --t-la: #93b1ff; --t-ca: #f1a56f; --t-pr: #7fd3a2; --t-op: #c6a6f3; --t-ml: #6fcfd7;
+  --t-it: #e3c46b; --t-dl: #f08cab; --t-ph: #8ac4ec; --t-fi: #d0cc72;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-ui); font-size: 15px;
+  display: grid; grid-template-rows: auto 1fr auto; overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.brand { font-family: var(--f-display); font-weight: 600; font-size: 1.15rem; letter-spacing: .01em; }
+.brand i { font-style: italic; font-weight: 400; color: var(--muted); }
+.pulse { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.pulse b { color: var(--ink); font-weight: 500; }
+
+main { position: relative; min-height: 0; }
+.view { position: absolute; inset: 0; overflow-y: auto; }
+
+/* feed */
+.feed { scroll-snap-type: y mandatory; overscroll-behavior-y: contain; }
+.slide { min-height: 100%; scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; border-bottom: 1px solid var(--line); }
+.card { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 14px; width: 100%; max-width: 40rem; margin-inline: auto; padding: 28px 20px 16px; min-width: 0; }
+.eyebrow { display: flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--tc, var(--accent)); flex: none; }
+.eyebrow .kind { color: var(--tc, var(--accent)); }
+.title { font-family: var(--f-display); font-weight: 600; font-size: 1.6rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+.prose { font-family: var(--f-display); font-size: 1.04rem; line-height: 1.6; min-width: 0; }
+.prose p { margin: 0 0 .7em; }
+.prose p:last-child { margin-bottom: 0; }
+.prose ul, .prose ol { margin: 0 0 .7em; padding-left: 1.2em; display: grid; gap: .3em; }
+.prose code { font-family: var(--f-mono); font-size: .88em; }
+.prose strong { font-weight: 600; }
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width: 100%; padding-block: 2px; margin: .6em 0 !important; }
+mjx-container { color: inherit; }
+.prose mjx-container:not([display="true"]) { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: middle; }
+.src { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); margin: 0; }
+.src::before { content: "Source · "; }
+
+.opts { display: grid; gap: 8px; }
+.opt { text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-family: var(--f-display); font-size: 1rem; }
+.opt[aria-pressed="true"].right { border-color: var(--good); box-shadow: inset 0 0 0 1px var(--good); }
+.opt[aria-pressed="true"].wrong { border-color: var(--bad); box-shadow: inset 0 0 0 1px var(--bad); }
+.opt.reveal-right { border-color: var(--good); }
+.reveal { border-left: 2px solid var(--tc, var(--accent)); padding: 2px 0 2px 14px; }
+.reveal .lbl { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 4px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: .86rem; font-weight: 500; }
+.chip.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.actions { display: grid; grid-template-columns: repeat(5, 1fr); max-width: 40rem; width: 100%; margin-inline: auto; padding: 6px 8px 10px; }
+.act { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 10px; font-size: .7rem; color: var(--muted); }
+.act svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.act[aria-pressed="true"] { color: var(--accent); }
+.act.good[aria-pressed="true"] { color: var(--good); }
+.act.again[aria-pressed="true"] { color: var(--bad); }
+.hintline { text-align: center; font-family: var(--f-mono); font-size: .68rem; color: var(--muted); letter-spacing: .06em; padding-bottom: 6px; }
+
+/* tabs */
+.tabs { display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); background: var(--bg); }
+.tab { padding: 9px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: .74rem; color: var(--muted); }
+.tab svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.tab[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+
+/* pages (study) */
+.page { max-width: 40rem; margin-inline: auto; padding: 20px 16px 32px; display: grid; gap: 18px; }
+.h { font-family: var(--f-display); font-weight: 600; font-size: 1.35rem; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; line-height: 1.5; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat { display: grid; gap: 2px; }
+.stat b { font-family: var(--f-display); font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .72rem; color: var(--muted); }
+.track { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.track:first-child { border-top: 0; padding-top: 0; }
+.track .name { font-weight: 600; min-width: 0; }
+.track .meta { font-size: .76rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { grid-column: 2 / 4; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; display: flex; }
+.bar i { display: block; height: 100%; background: var(--tc); }
+.bar i.seen { opacity: .35; }
+.track .btns { display: flex; gap: 6px; }
+.small { padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line); font-size: .8rem; font-weight: 500; background: var(--bg); }
+.switch { display: flex; align-items: center; gap: 8px; font-size: .86rem; }
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+.back { justify-self: start; }
+.readcard { display: grid; gap: 12px; padding: 18px 0; border-top: 1px solid var(--line); }
+.readcard:first-of-type { border-top: 0; }
+.readcard .title { font-size: 1.3rem; }
+.saved-item { text-align: left; padding: 10px 0; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: center; }
+.saved-item:first-child { border-top: 0; }
+.note { font-size: .8rem; color: var(--muted); line-height: 1.5; margin: 0; }
+
+/* exam */
+.examhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; position: sticky; top: 0; background: var(--bg); padding: 10px 0; z-index: 2; }
+.timer { font-family: var(--f-mono); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.q { display: grid; gap: 10px; padding: 16px 0; border-top: 1px solid var(--line); }
+.qn { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); letter-spacing: .06em; }
+.mark { display: flex; gap: 8px; align-items: center; font-size: .86rem; }
+.mark .small[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--bg); }
+.score { font-family: var(--f-display); font-size: 1.2rem; font-weight: 600; }
+
+/* ask sheet */
+.scrim { position: fixed; inset: 0; background: rgb(0 0 0 / .35); z-index: 20; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 21; max-height: 88%; display: flex; flex-direction: column; background: var(--surface); border-top-left-radius: 18px; border-top-right-radius: 18px; border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.sheet-in { width: 100%; max-width: 40rem; margin-inline: auto; display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px 8px; }
+.sheet-head .t { font-family: var(--f-display); font-weight: 600; font-size: 1.05rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; flex: none; }
+.seg button { padding: 5px 11px; border-radius: 999px; font-size: .78rem; font-weight: 500; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.msgs { flex: 1; overflow-y: auto; padding: 4px 16px 10px; display: grid; gap: 12px; align-content: start; min-height: 6rem; }
+.msg { min-width: 0; }
+.msg.me { justify-self: end; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; max-width: 85%; font-size: .92rem; }
+.msg.ai { font-family: var(--f-display); line-height: 1.55; }
+.msg.ai.pending { color: var(--muted); font-family: var(--f-mono); font-size: .76rem; }
+.compose { display: grid; gap: 8px; padding: 8px 16px 12px; border-top: 1px solid var(--line); }
+.compose-row { display: flex; gap: 8px; align-items: end; }
+textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); max-height: 7rem; }
+.send { padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--bg); font-weight: 600; }
+.send:disabled { opacity: .45; }
+.photo { font-size: .8rem; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .feed { scroll-behavior: smooth; }
+  .sheet { animation: rise .18s ease-out; }
+  @keyframes rise { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+}
+@media (min-width: 720px) {
+  .title { font-size: 1.9rem; }
+  .prose { font-size: 1.1rem; }
+}
+</style>
+
+<header class="top">
+  <div class="brand">Lemma <i>feed</i></div>
+  <div class="pulse" id="pulse" aria-live="polite"><b>0</b> today</div>
+</header>
+
+<main>
+  <section class="view feed" id="view-feed" aria-label="Feed"></section>
+  <section class="view" id="view-study" aria-label="Study" hidden></section>
+</main>
+
+<nav class="tabs" role="tablist">
+  <button class="tab" role="tab" id="tab-feed" aria-selected="true" data-view="feed">
+    <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Feed</button>
+  <button class="tab" role="tab" id="tab-study" aria-selected="false" data-view="study">
+    <svg viewBox="0 0 24 24"><path d="M3 5.5C5.5 4 9 4 12 6c3-2 6.5-2 9-.5V19c-2.5-1.5-6-1.5-9 .5-3-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/></svg>Study</button>
+</nav>
+
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" hidden aria-label="Ask Claude">
+  <div class="sheet-in">
+    <div class="sheet-head">
+      <div class="t" id="ask-title">Ask</div>
+      <div class="seg" id="ask-mode" role="group" aria-label="Answer style">
+        <button type="button" data-mode="explain" aria-pressed="true">Explain</button>
+        <button type="button" data-mode="tutor" aria-pressed="false">Tutor</button>
+      </div>
+      <button class="small" id="ask-close" type="button">Close</button>
+    </div>
+    <div class="msgs" id="ask-msgs"></div>
+    <form class="compose" id="ask-form">
+      <div class="row" id="ask-suggest"></div>
+      <div class="compose-row">
+        <textarea id="ask-input" rows="1" placeholder="Ask about this card"></textarea>
+        <button class="send" id="ask-send" type="submit">Ask</button>
+      </div>
+      <label class="photo" id="ask-photo-wrap" hidden>Photo of your working <input type="file" id="ask-photo" accept="image/*"></label>
+    </form>
+  </div>
+</section>
+
+<!-- cards load from the private repo: app-data/content/lemma-deck.txt -->
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { enableMenu: false },
+  startup: { typeset: false, ready() { MathJax.startup.defaultReady(); window.__mjReady && window.__mjReady(); } }
+};
+const mathReady = new Promise(r => { window.__mjReady = r; });
+</script>
+<script src="vendor/mathjax/tex-svg.js" async></script>
+<script src="bridge.js"></script>
+<script>
+Bridge.start(() => {
+'use strict';
+
+/* ---------- deck ---------- */
+const TRACKS = {
+  la: 'Linear algebra', ca: 'Calculus & analysis', pr: 'Probability & statistics',
+  op: 'Optimisation', ml: 'Machine learning', it: 'Information theory',
+  dl: 'Deep learning', ph: 'Physics', fi: 'Economics & finance'
+};
+const KINDS = { def: 'Definition', thm: 'Theorem', formula: 'Formula', intuition: 'Intuition', check: 'Quick check', problem: 'Problem', why: 'Why it matters' };
+
+function parseDeck(txt) {
+  const out = [];
+  for (const chunk of txt.split(/^=== /m).slice(1)) {
+    const lines = chunk.split('\n');
+    const [id, track, kind, title, src] = lines[0].split('|').map(s => s.trim());
+    const card = { id, track, kind, title, src };
+    let key = null, buf = [];
+    const flush = () => { if (key) card[key] = buf.join('\n').trim(); };
+    for (const line of lines.slice(1)) {
+      if (line.startsWith('#')) continue;
+      const m = line.match(/^(body|say|hint|sol|opts|ans|why):\s?(.*)$/);
+      if (m) { flush(); key = m[1]; buf = [m[2]]; } else buf.push(line);
+    }
+    flush();
+    if (card.opts) card.opts = card.opts.split(' || ').map(s => s.trim());
+    if (card.ans !== undefined) card.ans = +card.ans;
+    out.push(card);
+  }
+  return out;
+}
+const DECK = parseDeck(Bridge.content.deck);
+const BY_ID = Object.fromEntries(DECK.map(c => [c.id, c]));
+const TRACK_IDS = Object.keys(TRACKS).filter(t => DECK.some(c => c.track === t));
+
+/* ---------- tiny markdown with maths kept intact ---------- */
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function md(src) {
+  const math = [];
+  let s = src.replace(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g, m => { math.push(m); return '\u0000' + (math.length - 1) + '\u0000'; });
+  s = esc(s);
+  const inline = t => t
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*(?!\s)([^*]+?)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  const html = s.split(/\n\s*\n/).map(block => {
+    const lines = block.split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) return '';
+    if (lines.every(l => /^\s*[-*] /.test(l))) return '<ul>' + lines.map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    if (lines.every(l => /^\s*\d+[.)] /.test(l))) return '<ol>' + lines.map(l => '<li>' + inline(l.replace(/^\s*\d+[.)] /, '')) + '</li>').join('') + '</ol>';
+    const first = lines.findIndex(l => /^\s*[-*] /.test(l));
+    if (first > 0 && lines.slice(first).every(l => /^\s*[-*] /.test(l))) {
+      return '<p>' + inline(lines.slice(0, first).join('<br>')) + '</p><ul>' + lines.slice(first).map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    }
+    return '<p>' + inline(lines.join('<br>')) + '</p>';
+  }).join('');
+  return html.replace(/\u0000(\d+)\u0000/g, (_, i) => esc(math[+i]));
+}
+async function typeset(el) {
+  await mathReady;
+  try { await MathJax.typesetPromise([el]); } catch (e) { /* leave source visible */ }
+}
+
+/* ---------- state: this device first, synced to the account when available ---------- */
+const DAY = 864e5;
+const INTERVALS = [0, 1, 3, 7, 16, 35, 90];
+const LS_KEY = 'lemma-feed-v1';
+let state = { p: {}, saved: {}, days: {}, exams: [], tracks: null, voice: '', rate: 1, pause: 5, updatedAt: 0 };
+try { const raw = localStorage.getItem(LS_KEY); if (raw) state = Object.assign(state, JSON.parse(raw)); } catch (e) {}
+let dbRef = null, syncLabel = 'Saved on this device', saveTimer = null, interacted = false;
+function save() {
+  state.updatedAt = Date.now();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+  if (!dbRef) return;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    dbRef.set({ json: JSON.stringify(state), updatedAt: state.updatedAt })
+      .then(() => { syncLabel = 'Synced to your private repo'; })
+      .catch(() => { syncLabel = 'Saved on this device (sync failed)'; });
+  }, 1500);
+}
+const today = () => new Date().toISOString().slice(0, 10);
+function streak() {
+  let n = 0; const d = new Date();
+  if (!state.days[today()]) d.setDate(d.getDate() - 1);
+  while (state.days[d.toISOString().slice(0, 10)]) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+const enabledTracks = () => (state.tracks && state.tracks.length ? state.tracks : TRACK_IDS);
+function renderPulse() {
+  const s = streak();
+  document.getElementById('pulse').innerHTML = `<b>${state.days[today()] || 0}</b> today · <b>${s}</b>-day streak`;
+}
+function markSeen(id) {
+  const now = Date.now();
+  const p = state.p[id];
+  if (!p) state.p[id] = { b: 0, d: now + DAY, s: 1, l: now };
+  else { p.s++; p.l = now; }
+  state.days[today()] = (state.days[today()] || 0) + 1;
+  save(); renderPulse();
+}
+function rate(id, good) {
+  const now = Date.now();
+  const p = state.p[id] || (state.p[id] = { b: 0, d: now, s: 1, l: now });
+  if (good) { p.b = Math.min((p.b || 0) + 1, INTERVALS.length - 1); p.d = now + INTERVALS[p.b] * DAY; }
+  else { p.b = 0; p.d = now + 10 * 60e3; }
+  interacted = true;
+  save();
+}
+
+/* ---------- what comes next: new cards round-robin across topics, reviews every 4th ---------- */
+class Picker {
+  constructor() { this.shown = new Set(); this.ptr = {}; this.turn = 0; this.n = 0; }
+  next() {
+    const now = Date.now();
+    const tracks = enabledTracks();
+    const pool = DECK.filter(c => tracks.includes(c.track));
+    if (!pool.length) return null;
+    if (pool.every(c => this.shown.has(c.id))) this.shown.clear();
+    const due = pool.filter(c => state.p[c.id] && state.p[c.id].d <= now && !this.shown.has(c.id)).sort((a, b) => state.p[a.id].d - state.p[b.id].d);
+    const fresh = () => {
+      for (let i = 0; i < tracks.length; i++) {
+        const t = tracks[(this.turn + i) % tracks.length];
+        const c = pool.find(c => c.track === t && !state.p[c.id] && !this.shown.has(c.id));
+        if (c) { this.turn = (this.turn + i + 1) % tracks.length; return c; }
+      }
+      return null;
+    };
+    this.n++;
+    let c = (this.n % 4 === 0 && due[0]) || fresh() || due[0];
+    if (!c) c = pool.filter(c => !this.shown.has(c.id)).sort((a, b) => ((state.p[a.id] || {}).l || 0) - ((state.p[b.id] || {}).l || 0))[0];
+    this.shown.add(c.id);
+    return c;
+  }
+}
+
+/* ---------- icons ---------- */
+const I = {
+  again: '<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4h4"/></svg>',
+  good: '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  save: '<svg viewBox="0 0 24 24"><path d="M6 3.5h12v17l-6-4-6 4z"/></svg>',
+  ask: '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M10 9.2a2 2 0 1 1 2.6 1.9c-.4.2-.6.5-.6.9v.4"/><path d="M12 14.2v.01"/></svg>',
+  speak: '<svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24"><rect x="6.5" y="5.5" width="4" height="13" rx="1"/><rect x="13.5" y="5.5" width="4" height="13" rx="1"/></svg>',
+  prev: '<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
+  next: '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>'
+};
+
+/* ---------- one card ---------- */
+function cardInner(c, opts = {}) {
+  const w = document.createElement('div');
+  w.className = 'card';
+  w.style.setProperty('--tc', `var(--t-${c.track})`);
+  w.innerHTML = `
+    <div class="eyebrow"><span class="dot"></span><span>${esc(TRACKS[c.track])}</span><span aria-hidden="true">·</span><span class="kind">${KINDS[c.kind] || c.kind}</span></div>
+    <h2 class="title">${esc(c.title)}</h2>
+    <div class="prose">${md(c.body || '')}</div>`;
+  if (c.kind === 'check' && !opts.examMode) {
+    const box = document.createElement('div'); box.className = 'opts';
+    const why = document.createElement('div'); why.className = 'reveal prose'; why.hidden = true;
+    why.innerHTML = '<span class="lbl">Why</span>' + md(c.why || '');
+    c.opts.forEach((o, i) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.innerHTML = md(o).replace(/^<p>|<\/p>$/g, '');
+      b.addEventListener('click', () => {
+        if (!why.hidden) return;
+        b.setAttribute('aria-pressed', 'true');
+        b.classList.add(i === c.ans ? 'right' : 'wrong');
+        box.children[c.ans].classList.add('reveal-right');
+        why.hidden = false;
+        rate(c.id, i === c.ans);
+        const act = w.parentElement && w.parentElement.querySelector(i === c.ans ? '.act.good' : '.act.again');
+        if (act) act.setAttribute('aria-pressed', 'true');
+      });
+      box.appendChild(b);
+    });
+    w.append(box, why);
+  }
+  if (c.kind === 'problem' && !opts.examMode) {
+    const row = document.createElement('div'); row.className = 'row';
+    const hint = document.createElement('div'); hint.className = 'reveal prose'; hint.hidden = true; hint.innerHTML = '<span class="lbl">Hint</span>' + md(c.hint || '');
+    const sol = document.createElement('div'); sol.className = 'reveal prose'; sol.hidden = true; sol.innerHTML = '<span class="lbl">Solution</span>' + md(c.sol || '');
+    const hb = document.createElement('button'); hb.type = 'button'; hb.className = 'chip'; hb.textContent = 'Show hint';
+    const sb = document.createElement('button'); sb.type = 'button'; sb.className = 'chip primary'; sb.textContent = 'Show solution';
+    hb.addEventListener('click', () => { hint.hidden = false; hb.remove(); });
+    sb.addEventListener('click', () => { sol.hidden = false; sb.remove(); });
+    if (c.hint) row.append(hb);
+    row.append(sb);
+    w.append(row, hint, sol);
+  }
+  const src = document.createElement('p'); src.className = 'src'; src.textContent = c.src; w.append(src);
+  return w;
+}
+
+/* ---------- feed ---------- */
+const feed = document.getElementById('view-feed');
+const picker = new Picker();
+let slides = [];
+function makeSlide(c) {
+  const s = document.createElement('article');
+  s.className = 'slide'; s.dataset.id = c.id;
+  s.append(cardInner(c));
+  const acts = document.createElement('div'); acts.className = 'actions';
+  const mk = (cls, icon, label, fn, pressed) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'act ' + cls; b.innerHTML = icon + label;
+    if (pressed !== undefined) b.setAttribute('aria-pressed', String(pressed));
+    b.addEventListener('click', fn); acts.append(b); return b;
+  };
+  const again = mk('again', I.again, 'Again', () => {
+    rate(c.id, false); again.setAttribute('aria-pressed', 'true'); good.setAttribute('aria-pressed', 'false');
+    const idx = slides.indexOf(s);
+    const copy = makeSlide(c);
+    const ref = slides[idx + 5];
+    if (ref) feed.insertBefore(copy, ref); else feed.append(copy);
+    slides.splice(Math.min(idx + 5, slides.length), 0, copy);
+    observe(copy); typeset(copy);
+    toast(s, 'It will come back in a few cards');
+  }, false);
+  const good = mk('good', I.good, 'Got it', () => {
+    rate(c.id, true); good.setAttribute('aria-pressed', 'true'); again.setAttribute('aria-pressed', 'false');
+    const p = state.p[c.id]; toast(s, `Next review in ${INTERVALS[p.b]} day${INTERVALS[p.b] === 1 ? '' : 's'}`);
+  }, false);
+  const sv = mk('save', I.save, 'Save', () => {
+    if (state.saved[c.id]) delete state.saved[c.id]; else state.saved[c.id] = Date.now();
+    sv.setAttribute('aria-pressed', String(!!state.saved[c.id])); save();
+  }, !!state.saved[c.id]);
+  mk('ask', I.ask, 'Ask', () => openAsk(c));
+  s.append(acts);
+  return s;
+}
+function toast(slide, text) {
+  let t = slide.querySelector('.hintline');
+  if (!t) { t = document.createElement('div'); t.className = 'hintline'; slide.append(t); }
+  t.textContent = text;
+}
+const seenTimers = new Map();
+const io = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    const s = e.target;
+    const big = e.rootBounds && e.intersectionRect.height > e.rootBounds.height * 0.55;
+    if (e.isIntersecting && (e.intersectionRatio > 0.55 || big)) {
+      if (!s.dataset.seen) seenTimers.set(s, setTimeout(() => { s.dataset.seen = '1'; markSeen(s.dataset.id); }, 1500));
+      if (slides.indexOf(s) >= slides.length - 3) appendSlides(6);
+    } else if (seenTimers.has(s)) { clearTimeout(seenTimers.get(s)); seenTimers.delete(s); }
+  }
+}, { root: feed, threshold: [0, 0.3, 0.6] });
+const observe = s => io.observe(s);
+function appendSlides(n) {
+  const frag = document.createDocumentFragment(); const made = [];
+  for (let i = 0; i < n; i++) { const c = picker.next(); if (!c) break; const s = makeSlide(c); made.push(s); frag.append(s); }
+  feed.append(frag); slides.push(...made); made.forEach(observe);
+  made.forEach(typeset);
+}
+function rebuildFeed() {
+  feed.innerHTML = ''; slides = []; Object.assign(picker, new Picker());
+  if (!DECK.some(c => enabledTracks().includes(c.track))) { feed.innerHTML = '<div class="page"><p class="sub">No topics are switched on. Turn some on in Study.</p></div>'; return; }
+  appendSlides(8);
+  feed.scrollTop = 0;
+}
+
+/* ---------- study view ---------- */
+const studyView = document.getElementById('view-study');
+function trackStats(t) {
+  const cs = DECK.filter(c => c.track === t);
+  const seen = cs.filter(c => state.p[c.id]).length;
+  const known = cs.filter(c => (state.p[c.id] || {}).b >= 3).length;
+  return { total: cs.length, seen, known };
+}
+function buildStudy() {
+  const now = Date.now();
+  const seen = DECK.filter(c => state.p[c.id]).length;
+  const known = DECK.filter(c => (state.p[c.id] || {}).b >= 3).length;
+  const due = DECK.filter(c => state.p[c.id] && state.p[c.id].d <= now).length;
+  const on = enabledTracks();
+  const saved = Object.keys(state.saved).filter(id => BY_ID[id]).sort((a, b) => state.saved[b] - state.saved[a]);
+  const lastExam = state.exams[state.exams.length - 1];
+  studyView.innerHTML = `
+  <div class="page">
+    <div><h1 class="h">Study</h1><p class="sub">Read a topic in order, or sit a short timed exam.</p></div>
+    <div class="panel stats">
+      <div class="stat"><b>${seen}</b><span>of ${DECK.length} seen</span></div>
+      <div class="stat"><b>${known}</b><span>known well</span></div>
+      <div class="stat"><b>${due}</b><span>due for review</span></div>
+      <div class="stat"><b>${streak()}</b><span>day streak</span></div>
+    </div>
+    <div class="panel">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <strong>Topics</strong>
+        <button class="small" id="mixed" type="button">Mixed exam</button>
+      </div>
+      <div id="tracks"></div>
+      <p class="note">Switched-on topics appear in the Feed.</p>
+    </div>
+    ${lastExam ? `<p class="note">Last exam: ${esc(lastExam.name)}, ${lastExam.score} of ${lastExam.of}.</p>` : ''}
+    <div class="panel"><strong>Saved cards</strong><div id="saved">${saved.length ? '' : '<p class="note">Tap Save on a card to keep it here.</p>'}</div></div>
+    <p class="note">${esc(syncLabel)}. ${DECK.length} cards in this first deck, drawn from Mathematics for Machine Learning, Rudin, Casella &amp; Berger, Boyd, Bishop, Cover &amp; Thomas, Goodfellow, Prince, Vaswani et al., Feynman, Hull, Joshi and Begg.</p>
+  </div>`;
+  const list = studyView.querySelector('#tracks');
+  for (const t of TRACK_IDS) {
+    const st = trackStats(t);
+    const row = document.createElement('div'); row.className = 'track'; row.style.setProperty('--tc', `var(--t-${t})`);
+    row.innerHTML = `
+      <input type="checkbox" id="on-${t}" ${on.includes(t) ? 'checked' : ''} aria-label="Show ${esc(TRACKS[t])} in the feed" style="width:18px;height:18px;accent-color:var(--tc)">
+      <label for="on-${t}"><div class="name">${esc(TRACKS[t])}</div><div class="meta">${st.seen} of ${st.total} seen · ${st.known} known</div></label>
+      <div class="btns"><button class="small" type="button" data-read="${t}">Read</button><button class="small" type="button" data-exam="${t}">Exam</button></div>
+      <div class="bar"><i style="width:${100 * st.known / st.total}%"></i><i class="seen" style="width:${100 * (st.seen - st.known) / st.total}%"></i></div>`;
+    list.append(row);
+  }
+  list.addEventListener('change', e => {
+    const box = e.target.closest('input[type=checkbox]'); if (!box) return;
+    const cur = new Set(enabledTracks()); const t = box.id.slice(3);
+    box.checked ? cur.add(t) : cur.delete(t);
+    state.tracks = TRACK_IDS.filter(x => cur.has(x)); save(); feedDirty = true;
+  });
+  list.addEventListener('click', e => {
+    const r = e.target.closest('[data-read]'); if (r) return openReader(r.dataset.read);
+    const x = e.target.closest('[data-exam]'); if (x) return openExam(x.dataset.exam);
+  });
+  studyView.querySelector('#mixed').addEventListener('click', () => openExam(null));
+  const sv = studyView.querySelector('#saved');
+  for (const id of saved) {
+    const c = BY_ID[id];
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'saved-item'; b.style.setProperty('--tc', `var(--t-${c.track})`);
+    b.innerHTML = `<span class="dot"></span><span>${esc(c.title)}</span>`;
+    b.addEventListener('click', () => openReader(c.track, c.id));
+    sv.append(b);
+  }
+  studyView.scrollTop = 0;
+}
+function openReader(t, focusId) {
+  const cs = DECK.filter(c => c.track === t);
+  studyView.innerHTML = `<div class="page"><button class="small back" type="button">Back to Study</button>
+    <div><h1 class="h">${esc(TRACKS[t])}</h1><p class="sub">${cs.length} cards in reading order.</p></div><div id="rlist"></div></div>`;
+  studyView.querySelector('.back').addEventListener('click', buildStudy);
+  const box = studyView.querySelector('#rlist');
+  for (const c of cs) {
+    const wrap = document.createElement('section'); wrap.className = 'readcard'; wrap.id = 'r-' + c.id;
+    const inner = cardInner(c); inner.style.padding = '0'; inner.style.maxWidth = 'none';
+    const row = document.createElement('div'); row.className = 'row';
+    const ask = document.createElement('button'); ask.type = 'button'; ask.className = 'small'; ask.textContent = 'Ask about this';
+    ask.addEventListener('click', () => openAsk(c));
+    row.append(ask); inner.append(row);
+    wrap.append(inner); box.append(wrap);
+  }
+  typeset(box).then(() => { if (focusId) { const el = document.getElementById('r-' + focusId); if (el) el.scrollIntoView(); } else studyView.scrollTop = 0; });
+}
+let examTimer = null;
+function openExam(t) {
+  clearInterval(examTimer);
+  const pool = DECK.filter(c => (t ? c.track === t : enabledTracks().includes(c.track)) && (c.kind === 'check' || c.kind === 'problem'));
+  const shuffled = pool.map(c => [Math.random(), c]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const qs = shuffled.slice(0, 5);
+  if (qs.length < 5) {
+    const recall = DECK.filter(c => (t ? c.track === t : enabledTracks().includes(c.track)) && ['thm', 'def', 'formula'].includes(c.kind))
+      .map(c => [Math.random(), c]).sort((a, b) => a[0] - b[0]).map(x => Object.assign({}, x[1], { kind: 'recall' }));
+    qs.push(...recall.slice(0, 5 - qs.length));
+  }
+  const name = t ? TRACKS[t] : 'Mixed topics';
+  const back = () => { clearInterval(examTimer); buildStudy(); };
+  if (!qs.length) {
+    studyView.innerHTML = `<div class="page"><button class="small back" type="button">Back to Study</button><p class="sub">${esc(name)} has no exam questions yet. Try a mixed exam.</p></div>`;
+    studyView.querySelector('.back').addEventListener('click', back); return;
+  }
+  const minutes = Math.max(5, qs.length * 3);
+  let left = minutes * 60, finished = false;
+  studyView.innerHTML = `<div class="page">
+    <div class="examhead"><button class="small back" type="button">Leave</button><span class="timer" id="timer"></span><button class="chip primary" id="finish" type="button">Finish</button></div>
+    <div><h1 class="h">${esc(name)}: mini exam</h1><p class="sub">${qs.length} questions, ${minutes} minutes. Answer on paper; solutions appear when you finish.</p></div>
+    <div id="qs"></div><div id="result"></div></div>`;
+  studyView.querySelector('.back').addEventListener('click', back);
+  const answers = {}, marks = {};
+  let rec = null;
+  const box = studyView.querySelector('#qs');
+  qs.forEach((c, n) => {
+    const q = document.createElement('section'); q.className = 'q'; q.style.setProperty('--tc', `var(--t-${c.track})`);
+    q.innerHTML = c.kind === 'recall'
+      ? `<div class="qn">QUESTION ${n + 1} · ${esc(TRACKS[c.track]).toUpperCase()} · RECALL</div><div class="prose"><p><strong>${esc(c.title)}</strong></p><p>Write down the statement from memory, with the key formula, then say where it is used.</p></div>`
+      : `<div class="qn">QUESTION ${n + 1} · ${esc(TRACKS[c.track]).toUpperCase()}</div><div class="prose"><p><strong>${esc(c.title)}</strong></p>${md(c.body)}</div>`;
+    if (c.kind === 'check') {
+      const o = document.createElement('div'); o.className = 'opts';
+      c.opts.forEach((txt, i) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'opt'; b.innerHTML = md(txt).replace(/^<p>|<\/p>$/g, '');
+        b.addEventListener('click', () => { if (finished) return; answers[c.id] = i; [...o.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === i))); });
+        o.append(b);
+      });
+      q.append(o);
+    }
+    const rev = document.createElement('div'); rev.className = 'reveal prose'; rev.hidden = true;
+    rev.innerHTML = '<span class="lbl">' + ({ check: 'Why', problem: 'Solution', recall: 'The card' })[c.kind] + '</span>' + md(({ check: c.why, problem: c.sol, recall: c.body })[c.kind] || '');
+    q.append(rev);
+    if (c.kind !== 'check') {
+      const m = document.createElement('div'); m.className = 'mark'; m.hidden = true;
+      m.innerHTML = '<span>Did you get it?</span><button class="small" type="button" data-v="1" aria-pressed="false">Yes</button><button class="small" type="button" data-v="0" aria-pressed="false">No</button>';
+      m.addEventListener('click', e => {
+        const b = e.target.closest('button'); if (!b) return;
+        marks[c.id] = b.dataset.v === '1';
+        [...m.querySelectorAll('button')].forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        rate(c.id, marks[c.id]); score();
+      });
+      q.append(m);
+    }
+    box.append(q);
+  });
+  typeset(box);
+  const tick = () => {
+    const el = document.getElementById('timer'); if (!el) return clearInterval(examTimer);
+    el.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    if (left-- <= 0) finish();
+  };
+  const score = () => {
+    const auto = qs.filter(c => c.kind === 'check' && answers[c.id] === c.ans).length;
+    const self = qs.filter(c => c.kind !== 'check' && marks[c.id]).length;
+    const pending = qs.filter(c => c.kind !== 'check' && marks[c.id] === undefined).length;
+    const s = auto + self;
+    document.getElementById('result').innerHTML = `<div class="panel"><div class="score">${s} of ${qs.length}</div><p class="note">${pending ? `Mark your ${pending} written answer${pending > 1 ? 's' : ''} above to finish scoring.` : 'Saved to your history.'}</p></div>`;
+    if (!rec) { rec = { name, of: qs.length, at: Date.now() }; state.exams.push(rec); }
+    rec.score = s; rec.pending = pending;
+    save();
+  };
+  function finish() {
+    if (finished) return; finished = true; clearInterval(examTimer);
+    const fb = document.getElementById('finish'); if (fb) fb.remove();
+    qs.forEach((c, n) => {
+      const q = box.children[n];
+      q.querySelector('.reveal').hidden = false;
+      if (c.kind === 'check') {
+        const o = q.querySelector('.opts');
+        o.children[c.ans].classList.add('reveal-right');
+        if (answers[c.id] !== undefined) { o.children[answers[c.id]].classList.add(answers[c.id] === c.ans ? 'right' : 'wrong'); rate(c.id, answers[c.id] === c.ans); }
+      } else q.querySelector('.mark').hidden = false;
+    });
+    score();
+  }
+  studyView.querySelector('#finish').addEventListener('click', finish);
+  tick(); examTimer = setInterval(tick, 1000);
+  studyView.scrollTop = 0;
+}
+
+/* ---------- ask Claude ---------- */
+const sheet = document.getElementById('sheet'), scrim = document.getElementById('scrim');
+const msgsEl = document.getElementById('ask-msgs'), input = document.getElementById('ask-input');
+const photo = document.getElementById('ask-photo'), photoWrap = document.getElementById('ask-photo-wrap');
+const ask = { card: null, turns: [], mode: 'explain', ctrl: null, sample: undefined, busy: false };
+const SUGGEST = {
+  def: ['Give me an example', 'Why is it defined this way?', 'Where is this used in ML?'],
+  thm: ['Why is this true?', 'Sketch the proof', 'Where is this used?'],
+  formula: ['Derive it step by step', 'Give a worked example', 'When does it break?'],
+  intuition: ['Make it more precise', 'Give a concrete example', 'What should I read next?'],
+  check: ['Why are the other options wrong?', 'Give me a harder one'],
+  problem: ['Give me a small nudge', 'Check my working', 'Give me a similar problem'],
+  why: ['Show the maths in detail', 'Give a real example']
+};
+async function getSample() {
+  if (ask.sample !== undefined) return ask.sample;
+  try { ask.sample = window.claude && window.claude.use ? await window.claude.use('sample') : null; } catch (e) { ask.sample = null; }
+  if (ask.sample) { try { const lim = await ask.sample.limits(); photoWrap.hidden = !lim.images; } catch (e) {} }
+  return ask.sample;
+}
+function setMode(m) { ask.mode = m; document.querySelectorAll('#ask-mode button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m))); }
+document.getElementById('ask-mode').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setMode(b.dataset.mode); });
+function addMsg(cls, html) { const d = document.createElement('div'); d.className = 'msg ' + cls; d.innerHTML = html; msgsEl.append(d); msgsEl.scrollTop = msgsEl.scrollHeight; return d; }
+function openAsk(c) {
+  if (ask.card !== c) { ask.card = c; ask.turns = []; msgsEl.innerHTML = ''; }
+  setMode(c.kind === 'problem' || c.kind === 'check' ? 'tutor' : 'explain');
+  document.getElementById('ask-title').textContent = c.title;
+  const sug = document.getElementById('ask-suggest'); sug.innerHTML = '';
+  (SUGGEST[c.kind] || []).forEach(t => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = t; b.addEventListener('click', () => send(t)); sug.append(b); });
+  sheet.hidden = false; scrim.hidden = false;
+  getSample().then(s => {
+    if (!s && !msgsEl.children.length) addMsg('ai pending', 'Add your Anthropic API key in Settings to ask Claude.');
+  });
+}
+function closeAsk() { if (ask.ctrl) ask.ctrl.abort(); sheet.hidden = true; scrim.hidden = true; }
+document.getElementById('ask-close').addEventListener('click', closeAsk);
+scrim.addEventListener('click', closeAsk);
+function contextPrompt(c) {
+  const parts = [
+    'You are a patient tutor inside a mobile study app. The learner is reading one short card from their study handbook (maths, AI, physics, economics).',
+    'Answer for a phone screen: plain short paragraphs or a short list, about 150 words unless they ask for more. Use LaTeX with $...$ inline and $$...$$ for display maths. No headings.',
+    `Card type: ${KINDS[c.kind]}. Topic: ${TRACKS[c.track]}. Source: ${c.src}.`,
+    `Card title: ${c.title}`,
+    `Card content:\n${c.body}`
+  ];
+  if (c.opts) parts.push('Options:\n' + c.opts.map((o, i) => `${i + 1}. ${o}`).join('\n') + `\nCorrect option: ${c.ans + 1}. Explanation: ${c.why}`);
+  if (c.hint) parts.push('Hint: ' + c.hint);
+  if (c.sol) parts.push('Reference solution (for you; do not reveal it unless the learner asks for it outright): ' + c.sol);
+  parts.push(ask.mode === 'tutor'
+    ? 'Style: Socratic tutor. Do not give the answer or the full solution. Check the learner\'s reasoning, point to the first line that goes wrong, or give the smallest useful hint, then ask one guiding question.'
+    : 'Style: clear explainer. Build intuition first, then the precise statement. Connect it to machine learning or physics when natural.');
+  return parts.join('\n\n');
+}
+async function send(text) {
+  text = (text || '').trim();
+  if (!text || ask.busy) return;
+  const s = await getSample();
+  if (!s) { addMsg('ai pending', 'Add your Anthropic API key in Settings to ask Claude.'); return; }
+  const c = ask.card;
+  addMsg('me', esc(text).replace(/\n/g, '<br>'));
+  input.value = '';
+  const content = ask.turns.length ? `${text}\n\n(${ask.mode === 'tutor' ? 'Keep tutoring: hints and questions, not the answer.' : 'Keep explaining clearly.'})` : `${contextPrompt(c)}\n\nLearner's question: ${text}`;
+  ask.turns.push({ role: 'user', content });
+  const out = addMsg('ai pending', 'Thinking…');
+  const opts = { onText: ({ text }) => { out.className = 'msg ai'; out.innerHTML = md(text); msgsEl.scrollTop = msgsEl.scrollHeight; }, cache: false };
+  if (photo.files && photo.files[0]) opts.images = photo.files[0];
+  ask.ctrl = new AbortController(); opts.signal = ask.ctrl.signal;
+  ask.busy = true; document.getElementById('ask-send').disabled = true;
+  try {
+    const r = await s(ask.turns, opts);
+    out.className = 'msg ai'; out.innerHTML = md(r.text) + (r.truncated ? '<p class="note">The answer was cut short. Ask it to continue.</p>' : '');
+    ask.turns.push({ role: 'assistant', content: r.text });
+    photo.value = '';
+    typeset(out);
+  } catch (e) {
+    ask.turns.pop();
+    const copy = {
+      cancelled: 'Stopped.', not_granted: 'Your Anthropic API key was rejected. Check it in Settings.', no_key: 'Add your Anthropic API key in Settings.',
+      offline: 'You are offline. Ask again when you are back online.', network: 'Could not reach Claude. Check your connection and ask again.',
+      rate_limited: 'Too many questions in a short time. Wait a minute, then ask again.',
+      api_error: 'Claude returned an error. Ask again in a moment.',
+      prompt_too_large: 'That question is too long. Shorten it and ask again.',
+      image_rejected: 'That photo could not be used. Try a smaller JPEG or PNG.', refused: 'Claude declined to answer that one.'
+    };
+    const keep = e && e.text ? md(e.text) : '';
+    out.className = 'msg ai'; out.innerHTML = keep + `<p class="note">${esc(copy[e && e.code] || 'The answer did not come through. Ask again.')}</p>`;
+    if (keep) typeset(out);
+  } finally {
+    ask.busy = false; ask.ctrl = null; document.getElementById('ask-send').disabled = false;
+  }
+}
+document.getElementById('ask-form').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); } });
+
+/* ---------- tabs ---------- */
+let feedDirty = false;
+function show(view) {
+  for (const v of ['feed', 'study']) {
+    document.getElementById('view-' + v).hidden = v !== view;
+    document.getElementById('tab-' + v).setAttribute('aria-selected', String(v === view));
+  }
+  if (view === 'study') buildStudy();
+  if (view === 'feed' && feedDirty) { feedDirty = false; rebuildFeed(); }
+}
+window.__show = show;
+document.querySelector('.tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) show(b.dataset.view); });
+feed.addEventListener('scroll', () => { interacted = true; }, { once: true, passive: true });
+
+/* ---------- start ---------- */
+renderPulse();
+rebuildFeed();
+const hash = (location.hash || '').slice(1);
+if (hash === 'study') show(hash);
+
+const canon = o => JSON.stringify(o, (k, v) => k === 'updatedAt' ? undefined : (v && typeof v === 'object' && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v));
+function mergeProgress(a, b) {
+  const out = Object.assign({}, b, a);
+  const newer = (a.updatedAt || 0) >= (b.updatedAt || 0) ? a : b;
+  ['tracks', 'voice', 'rate', 'pause'].forEach(k => { if (k in newer) out[k] = newer[k]; });
+  out.p = Object.assign({}, b.p || {});
+  for (const [id, v] of Object.entries(a.p || {})) {
+    const r = out.p[id];
+    if (!r || (v.l || 0) >= (r.l || 0)) out.p[id] = r ? Object.assign({}, v, { s: Math.max(v.s || 0, r.s || 0) }) : v;
+    else out.p[id] = Object.assign({}, r, { s: Math.max(v.s || 0, r.s || 0) });
+  }
+  out.saved = Object.assign({}, b.saved || {}, a.saved || {});
+  out.days = Object.assign({}, b.days || {});
+  for (const [day, n] of Object.entries(a.days || {})) out.days[day] = Math.max(n, out.days[day] || 0);
+  const seen = new Set(); out.exams = [];
+  [...(b.exams || []), ...(a.exams || [])].sort((x, y) => (x.at || 0) - (y.at || 0)).forEach(e => { const k = e.at + '|' + e.name; if (!seen.has(k)) { seen.add(k); out.exams.push(e); } });
+  out.updatedAt = Math.max(a.updatedAt || 0, b.updatedAt || 0);
+  return out;
+}
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if (!db || !user) return;
+    const uid = await user.id(); if (!uid) return;
+    const ref = db.collection('data/users/' + uid).doc('progress');
+    const snap = await ref.get();
+    if (snap.exists) {
+      const d = snap.data() || {};
+      const remote = d.json ? JSON.parse(d.json) : null;
+      if (remote) {
+        // Merge card by card instead of letting the newer copy win: cards seen on this
+        // device before the repo copy arrived must not wipe older progress, or the reverse.
+        const before = JSON.stringify(state);
+        state = mergeProgress(state, remote);
+        try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+        if (JSON.stringify(state) !== before) {
+          renderPulse();
+          if (!interacted) rebuildFeed();
+          if (!document.getElementById('view-study').hidden) buildStudy();
+        }
+        dbRef = ref; syncLabel = 'Synced to your private repo';
+        if (canon(remote) !== canon(state)) save();
+        return;
+      }
+    }
+    dbRef = ref; syncLabel = 'Synced to your private repo';
+    save();
+  } catch (e) { syncLabel = 'Saved on this device'; }
+})();
+});
+</script>
+
+</body></html>

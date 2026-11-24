@@ -1,0 +1,362 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Papers</title><meta name="theme-color" content="#fbfaf7"><style>.embedded .tabs{display:none!important}</style></head><body>
+<style>
+/* Layout: desk-session tool. Chapter strip on top; problem list beside (or above, on a phone) a work sheet for the chosen problem. Same type and palette family as Lemma. */
+:root {
+  --bg: #eef1ef;
+  --surface: #fbfcfb;
+  --ink: #17201c;
+  --muted: #56645d;
+  --line: #d3dbd6;
+  --accent: #2a55c9;
+  --accent-ink: #ffffff;
+  --good: #1b7449;
+  --warn: #96700f;
+  --bad: #b3372f;
+  --tint: rgba(42, 85, 201, .08);
+  --f-display: "Literata", Georgia, "Times New Roman", serif;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933;
+    --accent: #e8cd6b; --accent-ink: #1d1b0e; --good: #72cf98; --warn: #e3c46b; --bad: #f08b7f;
+    --tint: rgba(232, 205, 107, .10);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933;
+  --accent: #e8cd6b; --accent-ink: #1d1b0e; --good: #72cf98; --warn: #e3c46b; --bad: #f08b7f;
+  --tint: rgba(232, 205, 107, .10);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-ui); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 32px;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+:is(button, select, textarea, input, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.wrap { max-width: 72rem; margin-inline: auto; display: grid; gap: 16px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; padding-block: 16px 4px; border-bottom: 1px solid var(--line); }
+.brand { font-family: var(--f-display); font-weight: 600; font-size: 1.3rem; margin: 0; }
+.brand i { font-weight: 400; color: var(--muted); }
+.sync { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); letter-spacing: .03em; }
+
+/* chapter strip */
+.chapters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.chap { flex: none; display: grid; gap: 2px; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); min-width: 9.5rem; }
+.chap[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.chap .n { font-family: var(--f-mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.chap .t { font-weight: 500; }
+.chap .s { font-family: var(--f-mono); font-size: .78rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.chap .s b { color: var(--ink); font-weight: 500; }
+
+/* two panes */
+.panes { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .panes { grid-template-columns: minmax(0, 1fr); } .panes.open .list { display: none; } .panes:not(.open) .sheet { display: none; } }
+@media (min-width: 761px) { .back { display: none !important; } }
+
+.list { display: grid; gap: 14px; }
+.group h2 { font-family: var(--f-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 0 0 6px; }
+.group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.item { width: 100%; display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.item[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.item .id { font-family: var(--f-mono); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.item .why { font-size: .86rem; color: var(--muted); min-width: 0; }
+.pill { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .03em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill.s3 { color: var(--good); border-color: var(--good); }
+.pill.s2 { color: var(--accent); border-color: var(--accent); }
+.pill.s1, .pill.s0 { color: var(--bad); border-color: var(--bad); }
+.pill.go { color: var(--warn); border-color: var(--warn); }
+.note { font-size: .84rem; color: var(--muted); margin: 0; }
+
+/* work sheet */
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.back { justify-self: start; font-size: .88rem; color: var(--accent); padding: 4px 0; }
+.eyebrow { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.eyebrow .tag { color: var(--accent); }
+.ptitle { font-family: var(--f-display); font-weight: 600; font-size: 1.45rem; line-height: 1.25; margin: 4px 0 0; text-wrap: balance; }
+.prose { font-family: var(--f-display); font-size: 1.02rem; line-height: 1.6; min-width: 0; overflow-wrap: anywhere; }
+.prose p { margin: 0 0 .7em; }
+.prose p:last-child { margin-bottom: 0; }
+.prose ul, .prose ol { margin: 0 0 .7em; padding-left: 1.3em; display: grid; gap: .3em; }
+.prose code { font-family: var(--f-mono); font-size: .86em; }
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width: 100%; margin: .5em 0 !important; }
+mjx-container { color: inherit; }
+.prose mjx-container:not([display="true"]) { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: middle; }
+.datanote { font-size: .86rem; color: var(--warn); margin: 0; }
+
+.block { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+.block h3 { font-family: var(--f-mono); font-size: .72rem; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.clock { font-family: var(--f-mono); font-size: 2.6rem; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1; }
+.clock.over { color: var(--warn); }
+.clockline { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 18px; }
+.clockline .sub { font-size: .84rem; color: var(--muted); }
+
+.btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.quiet { border-color: transparent; color: var(--muted); padding-inline: 6px; }
+.btn.danger { color: var(--bad); }
+
+textarea, input[type="text"] { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+.file { display: grid; gap: 6px; }
+.file input { font: inherit; font-size: .88rem; max-width: 100%; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+.thumbs img { height: 72px; width: auto; border-radius: 6px; border: 1px solid var(--line); }
+
+.bubble { background: var(--tint); border-radius: 10px; padding: 10px 12px; }
+.bubble.me { background: transparent; border: 1px dashed var(--line); }
+.verdict { display: grid; gap: 10px; }
+.score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score .big { font-family: var(--f-mono); font-size: 2rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.score .lbl { font-weight: 500; }
+.score .meta { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+.quote { border-left: 3px solid var(--bad); padding-left: 10px; font-family: var(--f-display); }
+details { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+details summary { cursor: pointer; font-weight: 500; }
+details[open] summary { margin-bottom: 8px; }
+.toolkit { background: var(--surface); display: grid; gap: 8px; }
+.toolkit summary { font-family: var(--f-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.toolkit .prose { font-size: .95rem; }
+.err { color: var(--bad); font-size: .9rem; margin: 0; }
+.status { font-size: .88rem; color: var(--muted); margin: 0; }
+.queued{border:1px dashed var(--line,#ccc);border-radius:10px;padding:10px 12px;margin:6px 0}
+.exam { display: grid; gap: 16px; }
+.exam .block { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; }
+.chs { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.chk { display: flex; gap: 8px; align-items: center; }
+.exqs { padding-left: 0; list-style: none; display: grid; gap: 14px; margin: 0; }
+.exq { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px; }
+.qmark { display: grid; gap: 6px; }
+.qmark .pill { justify-self: start; }
+.exhist { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+</style>
+<style>
+.pp { display: grid; gap: 10px; }
+.pp .item .why small { display: block; color: var(--muted); font-size: .8rem; }
+.next { outline: 2px solid var(--accent); outline-offset: 2px; }
+.qa { display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 10px; }
+.fb { border-left: 3px solid var(--accent); padding-left: 10px; }
+a.open { font-weight: 600; color: var(--accent); }
+#pview .block { display: grid; gap: 10px; }
+#pview .back { display: inline-block !important; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Papers <i>· reading list</i></h1>
+    <span class="sync" id="sync">Saved on this device</span>
+  </header>
+  <section id="plist" class="list" aria-label="Papers"></section>
+  <section id="pview" class="sheet" aria-live="polite" hidden></section>
+</div>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { enableMenu: false },
+  startup: { typeset: false, ready() { MathJax.startup.defaultReady(); window.__mjReady && window.__mjReady(); } }
+};
+</script>
+<script src="vendor/mathjax/tex-svg.js" async></script>
+<script src="bridge.js"></script>
+<script>
+Bridge.start(() => {
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function md(src) {
+  const math = [];
+  let s = String(src || '').replace(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g, m => { math.push(m); return '\u0000' + (math.length - 1) + '\u0000'; });
+  s = esc(s);
+  const inline = t => t
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*(?!\s)([^*]+?)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  const html = s.split(/\n\s*\n/).map(block => {
+    const lines = block.split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) return '';
+    if (lines.every(l => /^\s*[-*] /.test(l))) return '<ul>' + lines.map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    if (lines.every(l => /^\s*\d+[.)] /.test(l))) return '<ol>' + lines.map(l => '<li>' + inline(l.replace(/^\s*\d+[.)] /, '')) + '</li>').join('') + '</ol>';
+    const first = lines.findIndex(l => /^\s*[-*] /.test(l));
+    if (first > 0 && lines.slice(first).every(l => /^\s*[-*] /.test(l))) {
+      return '<p>' + inline(lines.slice(0, first).join('<br>')) + '</p><ul>' + lines.slice(first).map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    }
+    return '<p>' + inline(lines.join('<br>')) + '</p>';
+  }).join('');
+  return html.replace(/\u0000(\d+)\u0000/g, (_, i) => esc(math[+i]));
+}
+const mathReady = new Promise(res => { window.__mjReady = res; if (window.MathJax && MathJax.typesetPromise) res(); });
+async function typeset(el) { await mathReady; try { MathJax.typesetClear([el]); await MathJax.typesetPromise([el]); } catch (e) {} }
+
+/* ---------- papers: list from the private repo, progress per paper ---------- */
+const PAPERS = (Bridge.content.papers || []).slice().sort((a, b) => a.order - b.order);
+const BY = Object.fromEntries(PAPERS.map(p => [p.slug, p]));
+const LS = 'study-papers-v1';
+let recs = {};
+try { recs = JSON.parse(localStorage.getItem(LS) || '{}') || {}; } catch (e) { recs = {}; }
+let db = null, cur = null, busy = false, live = '', err = '', pdfFile = null;
+try { cur = localStorage.getItem(LS + '-view') || null; } catch (e) {}
+const blank = slug => ({ slug, status: 'new', questions: [], guide: '', guideFromPdf: false, explains: [], notes: '', startedAt: 0, doneAt: 0, updatedAt: 0 });
+const rec = slug => recs[slug] || (recs[slug] = blank(slug));
+const setSync = t => { $('#sync').textContent = t; };
+const day = ts => ts ? new Date(ts).toISOString().slice(0, 10) : '';
+
+function notesMd(p, r) {
+  const L = [`# ${p.title}`, '', `${p.authors} (${p.year}) · ${p.url}`, '', `Status: ${r.status}${r.doneAt ? ' (' + day(r.doneAt) + ')' : ''}`, ''];
+  if (r.guide) L.push('## Reading guide' + (r.guideFromPdf ? '' : ' (from the title, no PDF attached)'), '', r.guide, '');
+  const ex = r.explains[r.explains.length - 1];
+  if (ex) L.push('## My explanation', '', ex.text, '', '### Check', '', ex.feedback, '');
+  if (r.notes) L.push('## Notes', '', r.notes, '');
+  return L.join('\n');
+}
+function questionsMd(p, r) {
+  const L = [`# ${p.title}: questions to read with`, ''];
+  r.questions.forEach((q, i) => L.push(`${i + 1}. ${q.q}`, '', `   Answer: ${q.a ? q.a.replace(/\n/g, '\n   ') : '(not yet)'}`, ''));
+  return L.join('\n');
+}
+function save(slug) {
+  const r = rec(slug), p = BY[slug]; r.updatedAt = Date.now();
+  if (r.status === 'new') { r.status = 'reading'; r.startedAt = r.startedAt || Date.now(); }
+  try { localStorage.setItem(LS, JSON.stringify(recs)); } catch (e) {}
+  if (db) {
+    db.doc('papers/' + slug).set({ slug, title: p.title, status: r.status, updatedAt: r.updatedAt, json: JSON.stringify(r) })
+      .then(() => setSync('Saved · syncing to your private repo')).catch(() => setSync('Saved on this device; repo sync will retry'));
+    Bridge.hub.writeText(`papers/${slug}/notes.md`, notesMd(p, r) + '\n', 'paper ' + slug);
+    if (r.questions.length) Bridge.hub.writeText(`papers/${slug}/questions.md`, questionsMd(p, r) + '\n', 'paper ' + slug);
+  }
+}
+const pill = r => !r || r.status === 'new' ? '<span class="pill">Not started</span>' : r.status === 'done' ? '<span class="pill s3">Read</span>' : '<span class="pill go">Reading</span>';
+
+function renderList() {
+  if (!PAPERS.length) { $('#plist').innerHTML = '<p class="note">No papers list in your repo yet (app-data/content/papers.json).</p>'; return; }
+  const next = PAPERS.find(p => p.phase === 1 && (!recs[p.slug] || recs[p.slug].status !== 'done'));
+  const row = p => `<li><button class="item ${next && next.slug === p.slug ? 'next' : ''}" data-slug="${p.slug}"><span class="id">${p.order}</span><span class="why">${esc(p.title)}<small>${esc(p.authors)} · ${p.year}</small></span>${pill(recs[p.slug])}</button></li>`;
+  const done = PAPERS.filter(p => recs[p.slug] && recs[p.slug].status === 'done').length;
+  $('#plist').innerHTML = `<p class="note">${done} of ${PAPERS.length} read. One a week, in order: capability papers first, so the safety papers have something to stand on.${next ? ` Next up: <b>${esc(next.title)}</b>.` : ''}</p>` +
+    [1, 2].map(ph => { const ps = PAPERS.filter(p => p.phase === ph); return ps.length ? `<div class="group"><h2>Phase ${ph}</h2><ul class="pp">${ps.map(row).join('')}</ul></div>` : ''; }).join('');
+}
+$('#plist').addEventListener('click', e => { const b = e.target.closest('[data-slug]'); if (!b) return; open(b.dataset.slug); });
+function open(slug) { cur = slug; err = ''; pdfFile = null; try { localStorage.setItem(LS + '-view', slug || ''); } catch (e) {} render(); window.scrollTo({ top: 0 }); }
+
+function render() {
+  const p = cur && BY[cur];
+  $('#plist').hidden = !!p; $('#pview').hidden = !p;
+  if (!p) { renderList(); return; }
+  const r = recs[p.slug] || blank(p.slug);
+  const ex = r.explains.slice().reverse();
+  $('#pview').innerHTML = `
+    <button class="back" id="back" style="display:inline-block">← All papers</button>
+    <div><div class="eyebrow"><span>Paper ${p.order}</span><span>·</span><span>Phase ${p.phase}</span><span>·</span>${pill(r)}</div>
+      <h2 class="ptitle">${esc(p.title)}</h2><p class="note">${esc(p.authors)} · ${p.year} · <a class="open" href="${esc(p.url)}" target="_blank" rel="noopener">Open the paper ↗</a></p></div>
+
+    <div class="block"><h3>1 · Before you read</h3>
+      ${r.questions.length ? r.questions.map((q, i) => `<div class="qa"><div class="prose"><p><strong>Q${i + 1}.</strong> ${md(q.q).replace(/^<p>|<\/p>$/g, '')}</p></div><textarea data-q="${i}" rows="2" placeholder="Your answer or prediction, now or after reading">${esc(q.a || '')}</textarea></div>`).join('')
+        : `<p class="note">Three questions to keep in mind while you read. Guess the answers now; check them after.</p><div class="row"><button class="btn primary" id="getq" ${busy ? 'disabled' : ''}>Give me 3 questions</button></div>`}
+    </div>
+
+    <div class="block"><h3>2 · Reading guide</h3>
+      ${r.guide ? `<div class="prose">${md(r.guide)}</div><p class="note">${r.guideFromPdf ? 'Made from the PDF you attached.' : 'Made from what Claude knows of the paper, without the PDF. Attach it for a guide that follows the actual sections.'}</p>` : '<p class="note">What to read closely, what to skim, and the key figure or equation in each section.</p>'}
+      <label class="file" for="pdf"><span class="note">Optional: attach the PDF (from Files) so the guide and the check follow the actual paper.</span><input id="pdf" type="file" accept="application/pdf"></label>
+      <div class="row"><button class="btn ${r.guide ? '' : 'primary'}" id="guide" ${busy ? 'disabled' : ''}>${r.guide ? 'Remake the guide' : 'Make my reading guide'}</button></div>
+    </div>
+
+    <div class="block"><h3>3 · Explain it back</h3>
+      <p class="note">After reading, in your own words: the problem, the method, the main result, and one limitation. Dictation on your keyboard works well here.</p>
+      <textarea id="explain" rows="6" placeholder="This paper shows that…"></textarea>
+      <div class="row"><button class="btn primary" id="check" ${busy ? 'disabled' : ''}>Check my explanation</button></div>
+      ${ex.map(x => `<details ${x === ex[0] ? 'open' : ''}><summary>Check from ${new Date(x.at).toLocaleDateString([], { dateStyle: 'medium' })}</summary><div class="bubble me">${esc(x.text).replace(/\n/g, '<br>')}</div><div class="prose fb">${md(x.feedback)}</div></details>`).join('')}
+    </div>
+
+    <div class="block"><h3>4 · Notes</h3>
+      <textarea id="notes" rows="5" placeholder="What you want to remember, open questions, links to other papers">${esc(r.notes || '')}</textarea>
+      <div class="row"><button class="btn ${r.status === 'done' ? 'quiet' : 'primary'}" id="done">${r.status === 'done' ? 'Mark as not read' : 'Mark as read'}</button></div>
+      <p class="note">Saved to <code>papers/${p.slug}/</code> in your private repo.</p>
+    </div>
+    <p class="status" id="status">${busy ? esc(live || 'Claude is working on it…') : ''}</p>
+    ${err ? `<p class="err">${esc(err)}</p>` : ''}`;
+  wire(p);
+  typeset($('#pview'));
+}
+function wire(p) {
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  on('back', () => open(null));
+  on('getq', () => getQuestions(p));
+  on('guide', () => makeGuide(p));
+  on('check', () => checkExplain(p));
+  on('done', () => { const r = rec(p.slug); if (r.status === 'done') { r.status = 'reading'; r.doneAt = 0; } else { r.status = 'done'; r.doneAt = Date.now(); } save(p.slug); render(); });
+  $('#pview').querySelectorAll('textarea[data-q]').forEach(t => t.addEventListener('change', () => { rec(p.slug).questions[+t.dataset.q].a = t.value; save(p.slug); }));
+  const n = document.getElementById('notes'); if (n) n.addEventListener('change', () => { rec(p.slug).notes = n.value; save(p.slug); });
+  const f = document.getElementById('pdf'); if (f) f.addEventListener('change', () => { pdfFile = f.files && f.files[0] || null; });
+}
+
+/* ---------- Claude ---------- */
+const ERR = { no_key: 'Add your Anthropic API key in Settings.', not_granted: 'Your Anthropic API key was rejected. Check it in Settings.', offline: 'You are offline. This needs a connection.', network: 'Could not reach Claude. Check your connection and try again.', rate_limited: 'Claude is busy right now. Try again in a minute.', prompt_too_large: 'That PDF is too large to send. Try without it.', bad_shape: 'The answer came back garbled. Try again.' };
+const about = p => `Paper: "${p.title}" by ${p.authors} (${p.year}), ${p.url}.`;
+// How prompts describe the reader: from the private repo (app-data/content/profile.json), neutral if absent.
+const reader = (Bridge.content.profile && Bridge.content.profile.reader) || 'The reader is studying machine learning and AI safety on their own.';
+async function pdfOpts(p) {
+  const key = 'pdf:' + p.slug;
+  if (pdfFile) { const blk = await Bridge.hub.pdfBlock(pdfFile); await Bridge.hub.files.put(key, blk).catch(() => {}); return { pdf: blk, fromPdf: true }; }
+  const stored = await Bridge.hub.files.get(key).catch(() => null);
+  return stored ? { pdf: stored, fromPdf: true } : { fromPdf: false };
+}
+async function run(p, label, fn) {
+  if (busy) return;
+  const s = window.claude && await window.claude.use('sample');
+  if (!s) { err = ERR.no_key; render(); return; }
+  if (!navigator.onLine) { err = ERR.offline; render(); return; }
+  busy = true; err = ''; live = label; render();
+  try { await fn(s); } catch (e) { err = ERR[e && e.code] || (e && e.message) || 'That did not come through. Try again.'; }
+  busy = false; live = ''; render(); renderList();
+}
+const getQuestions = p => run(p, 'Writing three questions…', async s => {
+  const v = await s.json(`${reader}\n${about(p)}\nWrite exactly 3 questions the reader should try to answer before and while reading this paper: one about the problem it addresses, one about the method or key idea, one about what the result implies for AI safety or capabilities. Each question one sentence; no answers. Return {"questions": ["...", "...", "..."]}.`, {});
+  const qs = (v && Array.isArray(v.questions) ? v.questions : []).slice(0, 3).map(q => ({ q: String(q), a: '' }));
+  if (!qs.length) throw { code: 'bad_shape' };
+  rec(p.slug).questions = qs; save(p.slug);
+});
+const makeGuide = p => run(p, 'Reading the paper and writing your guide…', async s => {
+  const o = await pdfOpts(p);
+  const out = await s(`${reader}\n${about(p)}\n${o.fromPdf ? 'The paper is attached.' : 'No PDF is attached: work from what you know of this paper, and say plainly if you are unsure of its section structure.'}\nWrite a section-by-section reading guide for a phone screen. For each section: **read closely**, **skim** or **skip**, with one line on what to look for, and name the single most important figure, table or equation. End with an estimated reading time and at most two prerequisite ideas worth refreshing first. Markdown, LaTeX in $...$, no headings bigger than bold text, under 300 words.`, Object.assign({ cache: false, onText: ({ text }) => { const st = $('#status'); if (st) st.textContent = text.slice(-140); } }, o.pdf ? { pdf: o.pdf } : {}));
+  const r = rec(p.slug); r.guide = out.text; r.guideFromPdf = o.fromPdf; pdfFile = null; save(p.slug);
+});
+const checkExplain = p => {
+  const text = (document.getElementById('explain').value || '').trim();
+  if (text.length < 40) { err = 'Write a few sentences first: the problem, the method, the main result and one limitation.'; render(); return; }
+  return run(p, 'Checking your explanation…', async s => {
+    const o = await pdfOpts(p);
+    const out = await s(`${reader}\n${about(p)}\n${o.fromPdf ? 'The paper is attached.' : 'No PDF is attached; rely on what you know of the paper and say if unsure.'}\nThe reader explained the paper back in their own words:\n"""${text}"""\nCheck it like a demanding but kind supervisor. Reply in Markdown, under 220 words, in this order: **What you got right** (one line), **What's missing or wrong** (bullets, quoting their words where they are wrong), **One question to answer next** (a single question that would deepen their understanding; do not answer it).`, Object.assign({ cache: false, onText: ({ text: t }) => { const st = $('#status'); if (st) st.textContent = t.slice(-140); } }, o.pdf ? { pdf: o.pdf } : {}));
+    rec(p.slug).explains.push({ text, feedback: out.text, at: Date.now() }); save(p.slug);
+  });
+};
+
+/* ---------- boot and sync ---------- */
+render();
+(async () => {
+  try {
+    const d = await window.claude.use('db'); if (!d) return;
+    const snap = await d.collection('papers').get();
+    let changed = false;
+    snap.docs.forEach(doc => { const v = doc.data() || {}; if (!v.slug || !v.json) return; const l = recs[v.slug]; if (!l || (v.updatedAt || 0) > (l.updatedAt || 0)) { try { recs[v.slug] = Object.assign(blank(v.slug), JSON.parse(v.json)); changed = true; } catch (e) {} } });
+    db = d; setSync('Saved · syncing to your private repo');
+    if (changed) { try { localStorage.setItem(LS, JSON.stringify(recs)); } catch (e) {} if (!busy) render(); }
+  } catch (e) { setSync('Saved on this device'); }
+})();
+window.__open = open;
+});
+</script>
+</body></html>

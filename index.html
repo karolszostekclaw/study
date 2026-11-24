@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Study</title>
+<meta name="description" content="Feed, study and desk sessions for a self-directed maths and ML curriculum.">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#eef1ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131b18" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Study">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<style>
+:root {
+  --bg: #eef1ef; --surface: #fbfcfb; --ink: #17201c; --muted: #56645d; --line: #d3dbd6;
+  --accent: #2a55c9; --good: #1b7449; --bad: #b3372f; --warn: #96700f;
+  --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933; --accent: #93b1ff; --good: #72cf98; --bad: #f08b7f; --warn: #e3c46b; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-ui); -webkit-text-size-adjust: 100%; }
+body { display: flex; flex-direction: column; height: 100dvh; padding-top: env(safe-area-inset-top, 0px); overflow: hidden; }
+main { flex: 1; position: relative; min-height: 0; }
+iframe.screen { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+[hidden] { display: none !important; }
+
+nav.bar { display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+nav.bar button { all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 9px; font-size: .72rem; color: var(--muted); position: relative; -webkit-tap-highlight-color: transparent; }
+nav.bar button svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+nav.bar button[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+nav.bar button:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; border-radius: 8px; }
+nav.bar .dot { position: absolute; top: 6px; left: calc(50% + 9px); width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+nav.bar .dot.error { background: var(--bad); }
+
+#settings { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.page { max-width: 560px; margin: 0 auto; padding: 18px 18px 40px; display: grid; gap: 16px; }
+h1 { font-size: 1.35rem; margin: 4px 0 0; }
+.sub { color: var(--muted); margin: 2px 0 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.panel h2 { font-size: 1rem; margin: 0; }
+label { display: grid; gap: 4px; font-size: .86rem; color: var(--muted); }
+input[type=text], input[type=password], select { font: 16px var(--f-mono); padding: 10px 11px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+button.btn { font: inherit; font-size: .9rem; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); cursor: pointer; }
+button.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+button.btn.danger { color: var(--bad); }
+.note { font-size: .82rem; color: var(--muted); margin: 0; }
+.ok { color: var(--good); } .bad { color: var(--bad); }
+.status { font-family: var(--f-mono); font-size: .8rem; }
+details summary { cursor: pointer; font-weight: 600; font-size: .92rem; }
+details.panel > summary { font-size: 1rem; }
+details.panel:not([open]) { display: block; }
+details ol { padding-left: 20px; margin: 8px 0 0; display: grid; gap: 6px; font-size: .88rem; }
+code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+.check { display: flex; gap: 8px; align-items: center; color: var(--ink); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <iframe class="screen" id="f-feed" title="Feed and Study" hidden></iframe>
+  <iframe class="screen" id="f-desk" title="Desk" hidden></iframe>
+  <iframe class="screen" id="f-papers" title="Papers" hidden></iframe>
+  <iframe class="screen" id="f-plan" title="Plan" hidden></iframe>
+  <section id="settings" hidden aria-label="Settings">
+    <div class="page">
+      <div><h1>Settings</h1><p class="sub">Keys stay on this device. Cards, problems and your attempts live in your private repo.</p></div>
+
+      <div class="panel">
+        <h2>Sync</h2>
+        <p class="status" id="sync-status">…</p>
+        <div class="row">
+          <button class="btn" id="sync-now" type="button">Sync now</button>
+          <button class="btn" id="reload-content" type="button">Reload cards, problems and plan</button>
+        </div>
+      </div>
+
+      <form class="panel" id="gh-form" autocomplete="off">
+        <h2>GitHub (private study repo)</h2>
+        <label>Repository<input type="text" id="gh-repo" spellcheck="false" autocapitalize="off"></label>
+        <label>Fine-grained token<input type="password" id="gh-token" placeholder="github_pat_…" spellcheck="false" autocapitalize="off"></label>
+        <div class="row"><button class="btn primary" type="submit">Save and test</button><span class="note" id="gh-result"></span></div>
+        <details>
+          <summary>How to make the token</summary>
+          <ol>
+            <li>On GitHub: Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> → Generate new token.</li>
+            <li>Repository access: <b>Only select repositories</b> → <code>karol-learning</code>.</li>
+            <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Nothing else.</li>
+            <li>Pick an expiry you are happy to renew (90 days is a fair default), generate, and paste it here.</li>
+          </ol>
+        </details>
+      </form>
+
+      <form class="panel" id="ai-form" autocomplete="off">
+        <h2>Claude (hints, marking, Ask)</h2>
+        <label>Anthropic API key<input type="password" id="ai-key" placeholder="sk-ant-…" spellcheck="false" autocapitalize="off"></label>
+        <label>Model for Ask and hints<input type="text" id="ai-fast" spellcheck="false" autocapitalize="off"></label>
+        <label>Model for marking and solutions<input type="text" id="ai-complex" spellcheck="false" autocapitalize="off"></label>
+        <label class="check"><input type="checkbox" id="ai-thinking"> Let the marker think before scoring (slower, more careful)</label>
+        <div class="row"><button class="btn primary" type="submit">Save and test</button><span class="note" id="ai-result"></span></div>
+        <details>
+          <summary>About the key</summary>
+          <ol>
+            <li>Create it at <b>console.anthropic.com</b> → API keys. API use is billed there, separately from a Claude subscription.</li>
+            <li>Set a monthly spend limit in the Console. A marking is usually a few cents; Ask and hints cost less.</li>
+            <li>The key is sent only to api.anthropic.com, straight from this device.</li>
+          </ol>
+        </details>
+      </form>
+
+      <details class="panel" id="help">
+        <summary>How to use the app</summary>
+        <p class="note"><b>Feed</b>: swipe through cards. <b>Got it</b> pushes a card further out (1, 3, 7, 16 days…); <b>Again</b> brings it back in a few cards. <b>Ask</b> explains a card or tutors you through it.</p>
+        <p class="note"><b>Study</b>: choose which topics show in the Feed, read a topic in order, or sit a 5-question timed mini exam.</p>
+        <p class="note"><b>Papers</b>: one paper a week, in order. Get 3 questions to read with, a section-by-section guide (attach the PDF for a better one), then explain the paper back and get it checked. Notes save to <code>papers/&lt;paper&gt;/</code> in your repo.</p>
+        <p class="note"><b>Desk → Exams</b>: the monthly checkpoint. Prepare it while you're online, then sit it offline: 90 minutes, closed book. Hand in your pages and each question is marked; anything you score 0–1 comes back next time.</p>
+        <p class="note"><b>Plan</b>: the whole curriculum as weeks with dates. Each week has a Mon–Thu book unit, a Saturday unit (coding, or the monthly checkpoint), a work-time item and any to-dos. Tick things off as you go. <b>Progress</b> (top of the tab) turns the ticks into bars and a checklist you can screenshot, share as an image or copy as text for a recruiter or a learning app; notes, solutions, promo items and to-dos stay out. Behind? <b>Delay a day</b> or <b>Delay a week</b> moves this week and everything after it back; breaks stay put, and you can undo. The plan comes from <code>scripts/build_schedule.py</code> in your repo.</p>
+        <p class="note"><b>Desk</b>: sit-down exercise sessions.</p>
+        <ol>
+          <li>Desk → pick the chapter → pick a problem. Anchors count towards the chapter score; extras are practice. "What you need" is free to read.</li>
+          <li>Tap <b>Start</b> and work on paper or in GoodNotes, with the problem number at the top of the page. After 25 minutes you can ask for a hint, which caps that problem at 2/3.</li>
+          <li>Finished? In GoodNotes: Share → Export → Image, saved to Photos or Files. On paper: take a photo.</li>
+          <li>Under <b>Mark now</b>, choose your pages in order and tap <b>Mark my answer</b>. You need a connection for this.</li>
+          <li>Read the mark, add a one-line post-mortem, and dispute it if it's wrong.</li>
+        </ol>
+        <p class="note">Everything saves to your private repo on its own: about 20 seconds after you stop, or when you leave the app. Offline, it waits on this device and syncs later. Every Sunday evening the review checks the week's marks and adds a flashcard for anything you scored under 2.</p>
+      </details>
+
+      <div class="panel">
+        <h2>This device</h2>
+        <p class="note">Install: on iPhone, open this page in Safari → Share → <b>Add to Home Screen</b>. On Android, Chrome menu → <b>Install app</b>.</p>
+        <div class="row"><button class="btn danger" id="forget" type="button">Remove keys from this device</button></div>
+        <p class="note" id="version"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav class="bar" role="tablist" aria-label="Sections">
+  <button role="tab" data-go="feed" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Feed</button>
+  <button role="tab" data-go="study" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 5.5C5.5 4 9 4 12 6c3-2 6.5-2 9-.5V19c-2.5-1.5-6-1.5-9 .5-3-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/></svg>Study</button>
+  <button role="tab" data-go="desk" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L10 19H5v-5z"/><path d="M12.5 6.5l5 5"/></svg>Desk</button>
+  <button role="tab" data-go="papers" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 15.5h5M10 9h2"/></svg>Papers</button>
+  <button role="tab" data-go="plan" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg>Plan</button>
+  <button role="tab" data-go="settings" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings<span class="dot" id="sync-dot" hidden></span></button>
+</nav>
+
+<script src="hub.js"></script>
+<script>
+(() => {
+'use strict';
+const VERSION = '1.4.2';
+const $ = s => document.querySelector(s);
+const frames = { feed: $('#f-feed'), desk: $('#f-desk'), papers: $('#f-papers'), plan: $('#f-plan') };
+const src = { feed: 'feed.html', desk: 'desk.html', papers: 'papers.html', plan: 'plan.html' };
+let current = null;
+
+function ensure(name) {
+  const f = frames[name];
+  if (!f.src) f.src = src[name];
+  return f;
+}
+function go(view) {
+  if (!['feed', 'study', 'desk', 'papers', 'plan', 'settings'].includes(view)) view = 'feed';
+  current = view;
+  document.querySelectorAll('nav.bar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.go === view)));
+  const frameName = view === 'study' ? 'feed' : view;
+  Object.entries(frames).forEach(([n, f]) => { f.hidden = frameName !== n; });
+  $('#settings').hidden = view !== 'settings';
+  if (frameName === 'feed') {
+    const f = ensure('feed');
+    const switchTo = () => { try { f.contentWindow.__show && f.contentWindow.__show(view === 'study' ? 'study' : 'feed'); } catch (e) {} };
+    if (f.contentWindow && f.contentWindow.__show) switchTo(); else f.addEventListener('load', () => setTimeout(switchTo, 50), { once: true });
+  }
+  if (frameName === 'desk' || frameName === 'papers' || frameName === 'plan') ensure(frameName);
+  if (frameName === 'plan') { try { frames.plan.contentWindow.__planRender && frames.plan.contentWindow.__planRender(); } catch (e) {} }
+  if (view === 'settings') fillSettings();
+  try { localStorage.setItem('study-view', view); } catch (e) {}
+}
+document.querySelector('nav.bar').addEventListener('click', e => { const b = e.target.closest('button[data-go]'); if (b) go(b.dataset.go); });
+window.App = { go, reloadScreens() { Object.entries(frames).forEach(([n, f]) => { if (f.src) f.src = src[n]; }); } };
+
+/* ---------- settings ---------- */
+function fillSettings() {
+  const s = Hub.settings;
+  $('#gh-repo').value = s.ghRepo; $('#gh-token').value = s.ghToken;
+  $('#ai-key').value = s.apiKey; $('#ai-fast').value = s.modelFast; $('#ai-complex').value = s.modelComplex;
+  $('#ai-thinking').checked = !!s.thinking;
+  $('#version').textContent = `App version ${VERSION}.`;
+}
+function say(el, text, ok) { el.textContent = text; el.className = 'note ' + (ok === true ? 'ok' : ok === false ? 'bad' : ''); }
+$('#gh-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const r = $('#gh-result');
+  Hub.saveSettings({ ghRepo: $('#gh-repo').value.trim(), ghToken: $('#gh-token').value.trim() });
+  say(r, 'Testing…');
+  try {
+    await Hub.testGitHub();
+    await Hub.fetchContent();
+    say(r, 'Connected. Cards and problems loaded.', true);
+    App.reloadScreens();
+    Hub.flush().catch(() => {});
+  } catch (err) { say(r, err.message, false); }
+});
+$('#ai-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const r = $('#ai-result');
+  Hub.saveSettings({ apiKey: $('#ai-key').value.trim(), modelFast: $('#ai-fast').value.trim() || 'claude-sonnet-5-5', modelComplex: $('#ai-complex').value.trim() || 'claude-opus-5-5', thinking: $('#ai-thinking').checked });
+  if (!Hub.settings.apiKey) { say(r, 'Saved without a key: hints, marking and Ask are off.'); return; }
+  say(r, 'Testing…');
+  try { await Hub.testClaude(); say(r, 'Claude is connected.', true); }
+  catch (err) { say(r, err.message || err.code, false); }
+});
+$('#sync-now').addEventListener('click', () => Hub.flush().catch(() => {}));
+$('#reload-content').addEventListener('click', async () => {
+  const st = $('#sync-status'); st.textContent = 'Loading cards and problems…';
+  try { await Hub.fetchContent(); st.textContent = 'Cards and problems reloaded.'; App.reloadScreens(); }
+  catch (err) { st.textContent = err.message; }
+});
+$('#forget').addEventListener('click', () => {
+  if (!confirm('Remove the GitHub token and the Anthropic key from this device? Unsynced changes stay queued until you add a token again.')) return;
+  Hub.forgetKeys(); fillSettings();
+});
+Hub.onStatus(s => {
+  $('#sync-status').textContent = s.text || '';
+  const dot = $('#sync-dot');
+  dot.hidden = !['error', 'local', 'offline'].includes(s.state);
+  dot.classList.toggle('error', s.state === 'error');
+});
+
+/* ---------- start ---------- */
+let start = 'feed';
+try { start = localStorage.getItem('study-view') || 'feed'; } catch (e) {}
+const hashView = location.hash.slice(1);
+if (hashView) start = hashView;
+if (!Hub.settings.ghToken && !localStorage.getItem('study-content-v1')) start = 'settings';
+go(start);
+
+// Pages queued offline are marked by the Desk screen: load it in the background when any wait.
+function queuedCount() { try { return Object.values(JSON.parse(localStorage.getItem('study-markq') || '{}')).reduce((a, b) => a + (+b || 0), 0); } catch (e) { return 0; } }
+function wakeDesk() { if (queuedCount() > 0 && navigator.onLine) ensure('desk'); }
+wakeDesk();
+window.addEventListener('online', () => setTimeout(wakeDesk, 1000));
+
+// Auto-update: a copy of the app left open for days must not keep running old code.
+// When the app comes back to the front and a newer version is published, reload (unsynced changes stay on the device).
+async function checkForUpdate() {
+  if (!navigator.onLine) return;
+  try {
+    const r = await fetch('version.json', { cache: 'no-store' });
+    if (!r.ok) return;
+    const v = (await r.json()).version;
+    if (v && v !== VERSION) { try { await Hub.flush(); } catch (e) {} location.reload(); }
+  } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+setInterval(checkForUpdate, 30 * 60 * 1000);
+setTimeout(checkForUpdate, 5000);
+
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+})();
+</script>
+</body>
+</html>

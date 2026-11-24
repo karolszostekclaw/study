@@ -1,0 +1,874 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style><title>Desk</title><meta name="theme-color" content="#fbfaf7"><style>.embedded .tabs{display:none!important}</style></head><body>
+<title>Study Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&display=swap">
+<style>
+/* Layout: desk-session tool. Chapter strip on top; problem list beside (or above, on a phone) a work sheet for the chosen problem. Same type and palette family as Lemma. */
+:root {
+  --bg: #eef1ef;
+  --surface: #fbfcfb;
+  --ink: #17201c;
+  --muted: #56645d;
+  --line: #d3dbd6;
+  --accent: #2a55c9;
+  --accent-ink: #ffffff;
+  --good: #1b7449;
+  --warn: #96700f;
+  --bad: #b3372f;
+  --tint: rgba(42, 85, 201, .08);
+  --f-display: "Literata", Georgia, "Times New Roman", serif;
+  --f-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933;
+    --accent: #e8cd6b; --accent-ink: #1d1b0e; --good: #72cf98; --warn: #e3c46b; --bad: #f08b7f;
+    --tint: rgba(232, 205, 107, .10);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933;
+  --accent: #e8cd6b; --accent-ink: #1d1b0e; --good: #72cf98; --warn: #e3c46b; --bad: #f08b7f;
+  --tint: rgba(232, 205, 107, .10);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--f-ui); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 32px;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+button:disabled { cursor: default; opacity: .5; }
+:is(button, select, textarea, input, summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+.wrap { max-width: 72rem; margin-inline: auto; display: grid; gap: 16px; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; padding-block: 16px 4px; border-bottom: 1px solid var(--line); }
+.brand { font-family: var(--f-display); font-weight: 600; font-size: 1.3rem; margin: 0; }
+.brand i { font-weight: 400; color: var(--muted); }
+.sync { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); letter-spacing: .03em; }
+
+/* chapter strip */
+.chapters { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.chap { flex: none; display: grid; gap: 2px; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); min-width: 9.5rem; }
+.chap[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.chap .n { font-family: var(--f-mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.chap .t { font-weight: 500; }
+.chap .s { font-family: var(--f-mono); font-size: .78rem; font-variant-numeric: tabular-nums; color: var(--muted); }
+.chap .s b { color: var(--ink); font-weight: 500; }
+
+/* two panes */
+.panes { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .panes { grid-template-columns: minmax(0, 1fr); } .panes.open .list { display: none; } .panes:not(.open) .sheet { display: none; } }
+@media (min-width: 761px) { .back { display: none !important; } }
+
+.list { display: grid; gap: 14px; }
+.group h2 { font-family: var(--f-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 0 0 6px; }
+.group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.item { width: 100%; display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.item[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.item .id { font-family: var(--f-mono); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.item .why { font-size: .86rem; color: var(--muted); min-width: 0; }
+.pill { font-family: var(--f-mono); font-size: .7rem; letter-spacing: .03em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pill.s3 { color: var(--good); border-color: var(--good); }
+.pill.s2 { color: var(--accent); border-color: var(--accent); }
+.pill.s1, .pill.s0 { color: var(--bad); border-color: var(--bad); }
+.pill.go { color: var(--warn); border-color: var(--warn); }
+.note { font-size: .84rem; color: var(--muted); margin: 0; }
+
+/* work sheet */
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 18px; min-width: 0; }
+.back { justify-self: start; font-size: .88rem; color: var(--accent); padding: 4px 0; }
+.eyebrow { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.eyebrow .tag { color: var(--accent); }
+.ptitle { font-family: var(--f-display); font-weight: 600; font-size: 1.45rem; line-height: 1.25; margin: 4px 0 0; text-wrap: balance; }
+.prose { font-family: var(--f-display); font-size: 1.02rem; line-height: 1.6; min-width: 0; overflow-wrap: anywhere; }
+.prose p { margin: 0 0 .7em; }
+.prose p:last-child { margin-bottom: 0; }
+.prose ul, .prose ol { margin: 0 0 .7em; padding-left: 1.3em; display: grid; gap: .3em; }
+.prose code { font-family: var(--f-mono); font-size: .86em; }
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width: 100%; margin: .5em 0 !important; }
+mjx-container { color: inherit; }
+.prose mjx-container:not([display="true"]) { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: middle; }
+.datanote { font-size: .86rem; color: var(--warn); margin: 0; }
+
+.block { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 16px; }
+.block h3 { font-family: var(--f-mono); font-size: .72rem; font-weight: 500; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.clock { font-family: var(--f-mono); font-size: 2.6rem; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1; }
+.clock.over { color: var(--warn); }
+.clockline { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 18px; }
+.clockline .sub { font-size: .84rem; color: var(--muted); }
+
+.btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.quiet { border-color: transparent; color: var(--muted); padding-inline: 6px; }
+.btn.danger { color: var(--bad); }
+
+textarea, input[type="text"] { width: 100%; font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; resize: vertical; }
+.file { display: grid; gap: 6px; }
+.file input { font: inherit; font-size: .88rem; max-width: 100%; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 6px; }
+.thumbs img { height: 72px; width: auto; border-radius: 6px; border: 1px solid var(--line); }
+
+.bubble { background: var(--tint); border-radius: 10px; padding: 10px 12px; }
+.bubble.me { background: transparent; border: 1px dashed var(--line); }
+.verdict { display: grid; gap: 10px; }
+.score { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.score .big { font-family: var(--f-mono); font-size: 2rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.score .lbl { font-weight: 500; }
+.score .meta { font-family: var(--f-mono); font-size: .75rem; color: var(--muted); }
+.quote { border-left: 3px solid var(--bad); padding-left: 10px; font-family: var(--f-display); }
+details { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+details summary { cursor: pointer; font-weight: 500; }
+details[open] summary { margin-bottom: 8px; }
+.toolkit { background: var(--surface); display: grid; gap: 8px; }
+.toolkit summary { font-family: var(--f-mono); font-size: .72rem; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); }
+.toolkit .prose { font-size: .95rem; }
+.err { color: var(--bad); font-size: .9rem; margin: 0; }
+.status { font-size: .88rem; color: var(--muted); margin: 0; }
+.queued{border:1px dashed var(--line,#ccc);border-radius:10px;padding:10px 12px;margin:6px 0}
+.exam { display: grid; gap: 16px; }
+.exam .block { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; }
+.chs { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.chk { display: flex; gap: 8px; align-items: center; }
+.exqs { padding-left: 0; list-style: none; display: grid; gap: 14px; margin: 0; }
+.exq { border-top: 1px solid var(--line); padding-top: 12px; display: grid; gap: 6px; }
+.qmark { display: grid; gap: 6px; }
+.qmark .pill { justify-self: start; }
+.exhist { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Study Desk <i>· Mathematics for Machine Learning</i></h1>
+    <span class="sync" id="sync">Saved on this device</span>
+  </header>
+
+  <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+
+  <div class="panes" id="panes">
+    <section class="list" id="list" aria-label="Problems"></section>
+    <section class="sheet" id="sheet" aria-live="polite"></section>
+  </div>
+  <section class="exam" id="exam" hidden aria-live="polite"></section>
+</div>
+
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] },
+  svg: { fontCache: 'global' },
+  options: { enableMenu: false },
+  startup: { typeset: false, ready() { MathJax.startup.defaultReady(); window.__mjReady && window.__mjReady(); } }
+};
+</script>
+<script src="vendor/mathjax/tex-svg.js" async></script>
+<script src="bridge.js"></script>
+<script>
+Bridge.start(() => {
+/* ---------- problems: MfML Part I, anchors and extras from books/deisenroth-mfml/exercises.md ---------- */
+// Problems and the 'What you need' panels load from the private repo: app-data/content/desk-mfml.json
+const BOOK = Bridge.content.desk.book;
+// How prompts describe the learner: from the private repo (app-data/content/profile.json), neutral if absent.
+const WHO = (Bridge.content.profile && Bridge.content.profile.learner) || 'a self-studying learner';
+const CHAPTERS = Bridge.content.desk.chapters;
+const PROBLEMS = {};
+CHAPTERS.forEach(c => c.problems.forEach(p => { p.ch = c.n; PROBLEMS[p.id] = p; }));
+/* ---------- what you need: definitions, method and a worked mini-example beside each problem (free, not a hint) ---------- */
+const TOOLKIT = Bridge.content.desk.toolkit;
+const TIMER_MS = 25 * 60 * 1000;   // struggle timer from exercise-protocol.md
+const EXTRA_MS = 15 * 60 * 1000;   // after a hint
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function md(src) {
+  const math = [];
+  let s = String(src || '').replace(/\$\$[\s\S]+?\$\$|\$[^$\n]+?\$/g, m => { math.push(m); return '\u0000' + (math.length - 1) + '\u0000'; });
+  s = esc(s);
+  const inline = t => t
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*(?!\s)([^*]+?)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  const html = s.split(/\n\s*\n/).map(block => {
+    const lines = block.split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) return '';
+    if (lines.every(l => /^\s*[-*] /.test(l))) return '<ul>' + lines.map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    if (lines.every(l => /^\s*\d+[.)] /.test(l))) return '<ol>' + lines.map(l => '<li>' + inline(l.replace(/^\s*\d+[.)] /, '')) + '</li>').join('') + '</ol>';
+    const first = lines.findIndex(l => /^\s*[-*] /.test(l));
+    if (first > 0 && lines.slice(first).every(l => /^\s*[-*] /.test(l))) {
+      return '<p>' + inline(lines.slice(0, first).join('<br>')) + '</p><ul>' + lines.slice(first).map(l => '<li>' + inline(l.replace(/^\s*[-*] /, '')) + '</li>').join('') + '</ul>';
+    }
+    return '<p>' + inline(lines.join('<br>')) + '</p>';
+  }).join('');
+  return html.replace(/\u0000(\d+)\u0000/g, (_, i) => esc(math[+i]));
+}
+const mathReady = new Promise(res => { window.__mjReady = res; if (window.MathJax && MathJax.typesetPromise) res(); });
+async function typeset(el) { await mathReady; try { MathJax.typesetClear([el]); await MathJax.typesetPromise([el]); } catch (e) {} }
+const mmss = ms => { const s = Math.max(0, Math.round(ms / 1000)); return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); };
+
+/* ---------- state: one record per problem; this device first, then the account ---------- */
+const LS_KEY = 'study-desk-v1';
+let attempts = {};
+try { attempts = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) { attempts = {}; }
+let db = null, syncLabel = 'Saved on this device';
+const blank = () => ({ started: 0, elapsed: 0, running: false, hints: [], solutionFirst: false, mark: null, disputed: false, postmortem: '', queued: null, updatedAt: 0 });
+const rec = id => attempts[id] || (attempts[id] = blank());
+function elapsed(r) { return r.elapsed + (r.running ? Date.now() - r.started : 0); }
+function flagsOf(r) {
+  const f = [];
+  if (r.hints.length) f.push('H');
+  if (r.solutionFirst) f.push('S');
+  if (r.mark && r.mark.overTimer) f.push('T');
+  return f;
+}
+function finalScore(r) {
+  if (!r.mark) return null;
+  if (r.solutionFirst) return 0;
+  let s = Math.max(0, Math.min(3, Math.round(Number(r.mark.score) || 0)));
+  if (r.hints.length) s = Math.min(s, 2);
+  return s;
+}
+function save(id) {
+  const r = rec(id); r.updatedAt = Date.now();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(attempts)); } catch (e) {}
+  if (db) {
+    const p = PROBLEMS[id];
+    db.doc('attempts/' + BOOK + '-' + id.replace('.', '-')).set({
+      book: BOOK, chapter: p.ch, problem: id, anchor: !!p.anchor,
+      score: finalScore(r), flags: flagsOf(r).join(''), updatedAt: r.updatedAt, json: JSON.stringify(r)
+    }).then(() => setSync('Saved · syncing to your private repo')).catch(() => setSync('Saved on this device; repo sync will retry'));
+  }
+}
+function setSync(t) { syncLabel = t; $('#sync').textContent = t; }
+
+/* ---------- chapter strip and list ---------- */
+let curCh = 2, curId = null;
+try { const v = JSON.parse(localStorage.getItem(LS_KEY + '-view') || 'null'); if (v) { curCh = v.ch || 2; curId = v.id || null; } } catch (e) {}
+const remember = () => { try { localStorage.setItem(LS_KEY + '-view', JSON.stringify({ ch: curCh, id: curId })); } catch (e) {} };
+
+function chapterScore(c) {
+  const anchors = c.problems.filter(p => p.anchor);
+  const marked = anchors.filter(p => attempts[p.id] && attempts[p.id].mark);
+  if (!marked.length) return null;
+  const pts = marked.reduce((a, p) => a + finalScore(attempts[p.id]), 0);
+  return { done: marked.length, of: anchors.length, outOf10: Math.round(pts / (anchors.length * 3) * 10) };
+}
+function pillFor(id) {
+  const r = attempts[id];
+  if (!r) return '<span class="pill">Not started</span>';
+  const s = finalScore(r);
+  if (s !== null) { const f = flagsOf(r).join(' '); return `<span class="pill s${s}">${s}/3${f ? ' ' + esc(f) : ''}</span>`; }
+  if (r.queued) return '<span class="pill go">Queued</span>';
+  if (r.running || r.elapsed) return '<span class="pill go">In progress</span>';
+  return '<span class="pill">Not started</span>';
+}
+function renderChapters() {
+  $('#chapters').innerHTML = CHAPTERS.map(c => {
+    const sc = chapterScore(c);
+    const s = sc ? `<b>${sc.outOf10}/10</b> · ${sc.done} of ${sc.of} anchors marked` : 'No anchors marked';
+    return `<button class="chap" data-ch="${c.n}" aria-pressed="${c.n === curCh}"><span class="n">Ch. ${c.n}</span><span class="t">${esc(c.name)}</span><span class="s">${s}</span></button>`;
+  }).join('') + (() => {
+    const open = exOpen(), last = exList().filter(x => x.status === 'marked').pop();
+    const s = open ? (open.status === 'ready' ? 'Exam ready to sit' : open.status === 'queued' ? 'Queued for marking' : 'Exam in progress') : last ? `<b>${last.marks.outOf10}/10</b> · last checkpoint` : 'Monthly checkpoint';
+    return `<button class="chap" data-ch="exam" aria-pressed="${curCh === 'exam'}"><span class="n">Exams</span><span class="t">Checkpoints</span><span class="s">${s}</span></button>`;
+  })();
+}
+function renderList() {
+  const isExam = curCh === 'exam';
+  $('#panes').hidden = isExam; $('#exam').hidden = !isExam;
+  if (isExam) { renderExam(); return; }
+  const c = CHAPTERS.find(x => x.n === curCh);
+  const row = p => `<li><button class="item" data-id="${p.id}" aria-current="${p.id === curId}"><span class="id">${p.id}</span><span class="why">${esc(p.why)}</span>${pillFor(p.id)}</button></li>`;
+  $('#list').innerHTML =
+    `<div class="group"><h2>Anchors · scored</h2><ul>${c.problems.filter(p => p.anchor).map(row).join('')}</ul></div>` +
+    `<div class="group"><h2>Extras · optional</h2><ul>${c.problems.filter(p => !p.anchor).map(row).join('')}</ul></div>` +
+    `<p class="note">Write in your GoodNotes Study notebook with the problem number on the first line. Pages are marked on Sunday; use Mark now here when you want feedback today.</p>`;
+}
+$('#chapters').addEventListener('click', e => {
+  const b = e.target.closest('.chap'); if (!b) return;
+  curCh = b.dataset.ch === 'exam' ? 'exam' : +b.dataset.ch; curId = null; exSel = null; remember();
+  renderChapters(); renderList(); renderSheet();
+});
+$('#list').addEventListener('click', e => {
+  const b = e.target.closest('.item'); if (!b) return;
+  curId = b.dataset.id; remember();
+  renderList(); renderSheet();
+  window.scrollTo({ top: 0 });
+});
+
+/* ---------- the work sheet ---------- */
+let tick = null, images = [], busy = false, liveText = '', errText = '';
+function renderSheet() {
+  clearInterval(tick); tick = null;
+  if (curCh === 'exam') return;
+  const panes = $('#panes'), sheet = $('#sheet');
+  if (!curId || !PROBLEMS[curId] || PROBLEMS[curId].ch !== curCh) {
+    curId = null; panes.classList.remove('open');
+    sheet.innerHTML = `<p class="eyebrow">Ch. ${curCh}</p><p class="prose">Pick a problem to start. Anchors set the chapter score; extras are practice. Each problem comes with the definitions and method it needs, so you don't have to look anything up in the book.</p>
+      <p class="note">Each attempt runs a 25-minute struggle timer. A Tutor hint unlocks when it ends and caps that problem at 2 of 3.</p>`;
+    return;
+  }
+  panes.classList.add('open');
+  const p = PROBLEMS[curId], r = attempts[curId] || blank();
+  const s = finalScore(r), flags = flagsOf(r);
+  const left = TIMER_MS - elapsed(r);
+  const hintOpen = left <= 0 || r.hints.length > 0;
+  const m = r.mark;
+
+  sheet.innerHTML = `
+    <button class="back" id="back">← All problems</button>
+    <div>
+      <div class="eyebrow"><span>MfML ${esc(p.id)}</span><span>·</span><span>${p.anchor ? 'Anchor' : 'Extra'}</span><span>·</span><span class="tag">${esc(p.type)}</span></div>
+      <h2 class="ptitle">${esc(p.why)}</h2>
+    </div>
+    <div class="prose" id="statement">${md(p.text)}</div>
+    ${p.data ? '<p class="datanote">The numbers for this one are in the book. Copy them onto your page so the marker can check your working.</p>' : ''}
+    ${TOOLKIT[p.id] ? `<details class="toolkit" open><summary>What you need</summary><div class="prose">${md(TOOLKIT[p.id])}</div><p class="note">Free to read; it doesn't count as a hint. Page numbers are the book's printed pages (in the free PDF, add 6 to get the PDF page).</p></details>` : ''}
+
+    <div class="block">
+      <h3>Struggle timer</h3>
+      <div class="clockline">
+        <span class="clock ${left < 0 ? 'over' : ''}" id="clock">${left >= 0 ? mmss(left) : '+' + mmss(-left)}</span>
+        <span class="sub" id="clocksub">${left > 0 ? 'until a hint is allowed' : 'Over the timer. Logged, no penalty.'}</span>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="run">${r.running ? 'Pause' : (r.elapsed ? 'Resume' : 'Start')}</button>
+        ${r.elapsed || r.running ? '<button class="btn quiet" id="reset">Reset timer</button>' : ''}
+      </div>
+    </div>
+
+    <div class="block">
+      <h3>Hint from the Tutor</h3>
+      ${r.hints.map(h => `<div class="bubble me">${esc(h.q || 'Stuck, no details given.')}</div><div class="bubble prose">${md(h.a)}</div>`).join('')}
+      ${hintOpen
+        ? `<textarea id="hintq" rows="2" placeholder="Optional: where are you stuck?"></textarea>
+           <div class="row"><button class="btn" id="hint">${r.hints.length ? 'Ask for another hint' : 'Ask for a hint'}</button><span class="note">Caps this problem at 2/3.</span></div>`
+        : `<p class="note">Unlocks when the timer reaches zero.</p>`}
+    </div>
+
+    <div class="block">
+      <h3>Mark now</h3>
+      ${m ? '' : `<details class="toolkit"><summary>How to hand in your page</summary><div class="prose"><ol>
+        <li>Write the problem number (${esc(p.id)}) at the top of the page.</li>
+        <li><strong>GoodNotes:</strong> open the page → Share → Export → <em>Image</em>, and save it to Photos or Files. <strong>Paper:</strong> take a photo straight from the picker below.</li>
+        <li>Tap the picker below and choose your pages <em>in order</em>. Several pages are fine.</li>
+        <li>Tap <strong>Mark my answer</strong>. This needs a connection and your Anthropic key in Settings.</li>
+        <li>Read the mark and write a one-line post-mortem. If a mark is wrong, open <em>Dispute this mark</em>: the second marking is final.</li>
+      </ol><p class="note">It saves to your private repo by itself, and the Sunday review picks it up. Offline? The timer and notes are kept on this device. Mark the page when you're back online, or leave it in your GoodNotes backup for the Sunday review.</p></div></details>`}
+      ${!m && r.queued ? `<div class="queued"><p class="prose"><strong>Queued:</strong> ${r.queued.pages} page${r.queued.pages > 1 ? 's' : ''} saved on this device ${new Date(r.queued.at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}. They'll be marked as soon as you're back online, even if you're on another tab.</p>
+        <div class="row"><button class="btn primary" id="markq" ${busy ? 'disabled' : ''}>Try marking now</button><button class="btn quiet danger" id="unqueue" ${busy ? 'disabled' : ''}>Remove the queued pages</button></div></div>` : ''}
+      ${m || r.queued ? '' : `<label class="file" for="pages"><span class="note">Share the page from GoodNotes as an image, or take a photo of paper. Several pages are fine.</span><input id="pages" type="file" accept="image/*" multiple></label>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="row"><button class="btn primary" id="mark" ${busy ? 'disabled' : ''}>Mark my answer</button>
+        <button class="btn quiet danger" id="giveup" ${busy ? 'disabled' : ''}>Show the solution (scores 0)</button></div>`}
+      <p class="status" id="status">${busy ? esc(liveText || 'Claude is working on it…') : ''}</p>
+      ${errText ? `<p class="err">${esc(errText)}</p>` : ''}
+      ${m ? verdictHtml(r, s, flags) : ''}
+    </div>`;
+
+  wireSheet(p, r);
+  typeset(sheet);
+  if (r.running) tick = setInterval(updateClock, 1000);
+}
+function verdictHtml(r, s, flags) {
+  const m = r.mark;
+  const lbl = ['No working approach', 'Right idea, major gap', 'Minor gap', 'Complete'][s];
+  return `<div class="verdict">
+    <div class="score"><span class="big">${s}/3</span><span class="lbl">${lbl}</span>
+      <span class="meta">${flags.length ? 'flags ' + flags.join(' ') + ' · ' : ''}confidence ${esc(m.confidence || '?')}${m.review ? ' · flagged for review' : ''}${r.disputed ? ' · second marking, final' : ''}</span></div>
+    ${m.quote ? `<div class="quote prose">${md(m.quote)}</div>` : ''}
+    ${m.gap ? `<div class="prose"><p><strong>Gap:</strong> ${md(m.gap).replace(/^<p>|<\/p>$/g, '')}</p></div>` : ''}
+    ${m.transcript ? `<details><summary>Transcript of your page</summary><div class="prose">${md(m.transcript)}</div><p class="note">Check it: anything marked [?] could not be read.</p></details>` : ''}
+    ${m.solution ? `<details><summary>Model solution</summary><div class="prose">${md(m.solution)}</div></details>` : ''}
+    <label for="pm" class="note">Post-mortem: what blocked you, or what you'd do differently?</label>
+    <textarea id="pm" rows="2">${esc(r.postmortem || '')}</textarea>
+    ${!r.disputed && !r.solutionFirst ? `<details><summary>Dispute this mark</summary>
+      <textarea id="objection" rows="3" placeholder="Why the mark is wrong"></textarea>
+      <div class="row"><button class="btn" id="dispute" ${busy ? 'disabled' : ''}>Mark it again</button><span class="note">The second marking stands.</span></div></details>` : ''}
+    <div class="row"><button class="btn quiet" id="redo">Start a fresh attempt</button></div>
+  </div>`;
+}
+function updateClock() {
+  const r = attempts[curId]; if (!r) return;
+  const left = TIMER_MS - elapsed(r);
+  const el = $('#clock'); if (!el) return;
+  el.textContent = left >= 0 ? mmss(left) : '+' + mmss(-left);
+  el.classList.toggle('over', left < 0);
+  if (left <= 0 && !$('#hint') && !r.hints.length) renderSheet();
+}
+function wireSheet(p, r) {
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  on('back', () => { curId = null; remember(); renderList(); renderSheet(); });
+  on('run', () => {
+    const x = rec(p.id);
+    if (x.running) { x.elapsed += Date.now() - x.started; x.running = false; }
+    else { x.started = Date.now(); x.running = true; }
+    save(p.id); renderSheet(); renderList();
+  });
+  on('reset', () => { const x = rec(p.id); x.elapsed = 0; x.running = false; save(p.id); renderSheet(); renderList(); });
+  on('hint', () => askHint(p));
+  on('mark', () => markIt(p, false));
+  on('markq', async () => { const b = await Bridge.hub.files.get(qKey(p.id)); if (b && b.length) markIt(p, false, b); else { rec(p.id).queued = null; save(p.id); updateQueueCount(); renderSheet(); renderList(); } });
+  on('unqueue', async () => { if (!confirm('Remove the queued pages? You can attach them again.')) return; await Bridge.hub.files.del(qKey(p.id)).catch(() => {}); rec(p.id).queued = null; save(p.id); updateQueueCount(); renderSheet(); renderList(); });
+  on('giveup', () => giveUp(p));
+  on('dispute', () => markIt(p, true));
+  on('redo', () => {
+    attempts[p.id] = blank(); images = []; errText = '';
+    save(p.id); renderChapters(); renderList(); renderSheet();
+  });
+  const pm = document.getElementById('pm');
+  if (pm) pm.addEventListener('change', () => { rec(p.id).postmortem = pm.value; save(p.id); });
+  const inp = document.getElementById('pages');
+  if (inp) {
+    inp.addEventListener('change', () => {
+      images = Array.from(inp.files || []);
+      $('#thumbs').innerHTML = images.map(f => `<img alt="Page preview" src="${URL.createObjectURL(f)}">`).join('');
+    });
+  }
+}
+
+/* ---------- Claude: hints, marking, solutions ---------- */
+let sampleP = null;
+function getSample() {
+  if (!sampleP) sampleP = (window.claude && window.claude.use) ? window.claude.use('sample').catch(() => null) : Promise.resolve(null);
+  return sampleP;
+}
+const ERR = {
+  not_granted: 'Your Anthropic API key was rejected. Check it in Settings.',
+  no_key: 'Add your Anthropic API key in Settings.',
+  offline: 'You are offline. Try again when you are back online.',
+  network: 'Could not reach Claude. Check your connection and try again.',
+  bad_shape: 'The marking came back garbled. Try again; your pages are still attached.',
+  rate_limited: 'Claude is busy right now. Try again in a minute.',
+};
+const problemBlock = p => `Book: Mathematics for Machine Learning (Deisenroth, Faisal, Ong, 2020). Exercise ${p.id} (chapter ${p.ch}).
+Problem statement (LaTeX in $...$):
+${p.text}${p.data ? '\n(The numeric data is in the book; the learner was asked to copy it onto the page. If it is missing and you need it, say so in "gap" and lower your confidence.)' : ''}`;
+
+async function askHint(p) {
+  if (busy) return;
+  const s = await getSample();
+  if (!s) { errText = 'Hints only work after you add your Anthropic API key in Settings.'; renderSheet(); return; }
+  const r = rec(p.id), q = ($('#hintq') && $('#hintq').value.trim()) || '';
+  busy = true; errText = ''; liveText = 'Thinking about a hint…'; renderSheet();
+  const prior = r.hints.map((h, i) => `Hint ${i + 1} given: ${h.a}`).join('\n');
+  const prompt = `You are a Socratic maths tutor for ${WHO}.
+${problemBlock(p)}
+
+The learner has worked for ${Math.round(elapsed(r) / 60000)} minutes and is stuck.${q ? `\nWhat they say: ${q}` : ''}${prior ? `\n${prior}` : ''}
+
+Do NOT give the answer, the method, or a worked step. Ask ONE question that points at the next step, plus at most one short sentence of encouragement. Use $...$ for maths. Plain text, no headings.`;
+  try {
+    const out = await s(prompt, { cache: false, onText: ({ text }) => { liveText = text; const st = $('#status'); if (st) st.textContent = text; } });
+    r.hints.push({ q, a: out.text, at: Date.now() });
+    if (!r.running) { r.started = Date.now(); r.running = true; }
+    save(p.id);
+  } catch (e) { errText = ERR[e && e.code] || 'The hint did not come through. Try again.'; }
+  busy = false; liveText = ''; renderSheet(); renderList();
+}
+
+/* ---------- offline queue: pages wait on this device until there is a connection ---------- */
+const qKey = id => 'mark:' + BOOK + ':' + id;
+function updateQueueCount() {
+  const n = Object.values(attempts).filter(r => r && r.queued && !r.mark).length
+    + Object.values(typeof exams === 'object' ? exams : {}).filter(x => x && x.status === 'queued').length;
+  try { const ex = JSON.parse(localStorage.getItem('study-markq') || '{}'); ex.desk = n; localStorage.setItem('study-markq', JSON.stringify(ex)); } catch (e) {}
+}
+async function queueMark(p, reason) {
+  const r = rec(p.id);
+  try {
+    const blocks = await Bridge.hub.prepareImages(images);
+    await Bridge.hub.files.put(qKey(p.id), blocks);
+    r.queued = { at: Date.now(), pages: blocks.length };
+    if (r.running) { r.elapsed += Date.now() - r.started; r.running = false; }
+    images = []; errText = '';
+    save(p.id); updateQueueCount();
+  } catch (e) { errText = 'Could not keep the pages on this device: ' + (e && e.message || e) + '. Try again.'; }
+  busy = false; liveText = ''; renderChapters(); renderList(); renderSheet();
+}
+let qRunning = false;
+async function processQueue() {
+  if (qRunning || busy || !navigator.onLine || !Bridge.hub.hasKey()) return;
+  const ids = Object.keys(attempts).filter(id => PROBLEMS[id] && attempts[id].queued && !attempts[id].mark);
+  if (!ids.length) return;
+  qRunning = true;
+  try {
+    for (const id of ids) {
+      const blocks = await Bridge.hub.files.get(qKey(id)).catch(() => null);
+      if (!blocks || !blocks.length) { attempts[id].queued = null; save(id); continue; }
+      await markIt(PROBLEMS[id], false, blocks);
+      if (!navigator.onLine || (attempts[id] && attempts[id].queued)) break;
+    }
+  } finally { qRunning = false; updateQueueCount(); }
+}
+window.addEventListener('online', () => setTimeout(processQueue, 2000));
+setInterval(processQueue, 60000);
+
+async function markIt(p, dispute, queued) {
+  if (busy) return;
+  const r = rec(p.id);
+  if (!dispute && !queued && !images.length) { errText = 'Add at least one page image first.'; renderSheet(); return; }
+  if (!dispute && !queued && !navigator.onLine) { busy = true; liveText = 'Offline: keeping your pages on this device…'; renderSheet(); return queueMark(p); }
+  const s = await getSample();
+  if (!s) { errText = 'Marking only works after you add your Anthropic API key in Settings.'; renderSheet(); return; }
+  const objection = dispute ? (($('#objection') && $('#objection').value.trim()) || '') : '';
+  if (dispute && !objection) { errText = 'Say why the mark is wrong, so the second marking can weigh it.'; renderSheet(); return; }
+  if (!dispute) { r.mark = null; }
+  if (r.running) { r.elapsed += Date.now() - r.started; r.running = false; }
+  busy = true; errText = ''; liveText = dispute ? 'Marking it again…' : queued ? `Marking ${p.id} from the queue…` : 'Reading your pages and marking…'; renderSheet();
+
+  const rubric = `Rubric, per problem:
+3 = Complete: correct, every step justified
+2 = Minor gap: right method, a small slip or one unjustified step
+1 = Right idea: sound approach, but a major step missing or wrong
+0 = No working approach`;
+  const rules = `Rules:
+1. First solve the problem yourself, privately, to get a reference solution. Mark against it.
+2. Transcribe the learner's work to Markdown with LaTeX in $...$ / $$...$$. Write [?] for anything unreadable; never guess.
+3. Score 0-3 on the rubric. If torn between two scores, give the lower and set "review": true.
+4. "quote": the learner's line you penalise, verbatim from your transcript ("" if the score is 3). "gap": one sentence naming what is missing or wrong ("" if none).
+5. "confidence": "high", "medium" or "low".
+6. "solution": a complete model solution in Markdown with LaTeX.
+Return ONLY a JSON object: {"transcript": string, "score": 0|1|2|3, "quote": string, "gap": string, "confidence": string, "review": boolean, "solution": string}`;
+  let prompt;
+  if (dispute) {
+    prompt = `You are giving a SECOND, final marking of a learner's handwritten solution. Re-read the transcript and the learner's objection fairly; change the score only if the objection is right.
+${problemBlock(p)}
+
+${rubric}
+
+First marking: score ${r.mark.score}/3. Quote: ${r.mark.quote}. Gap: ${r.mark.gap}
+Transcript of the learner's work:
+${r.mark.transcript}
+
+The learner's objection: ${objection}
+
+${rules}
+Keep the same transcript unless the objection corrects a misreading.`;
+  } else {
+    prompt = `You are marking a handwritten solution for a self-studying learner. The attached image(s) are their handwritten pages, in order.
+${problemBlock(p)}
+
+${rubric}
+
+${rules}`;
+  }
+  try {
+    const opts = { modelTier: 'complex', cache: false };
+    if (!dispute) { if (queued) opts.imageBlocks = queued; else opts.images = images; }
+    const v = await s.json(prompt, opts);
+    if (!v || typeof v !== 'object' || v.score === undefined) throw { code: 'bad_shape' };
+    v.overTimer = elapsed(r) > TIMER_MS + (r.hints.length ? EXTRA_MS : 0);
+    v.at = Date.now();
+    r.mark = v;
+    if (dispute) r.disputed = true;
+    if (queued || r.queued) { r.queued = null; Bridge.hub.files.del(qKey(p.id)).catch(() => {}); updateQueueCount(); }
+    images = [];
+    save(p.id);
+  } catch (e) {
+    const net = e && (e.code === 'offline' || e.code === 'network');
+    if (net && !dispute && !queued && images.length) { liveText = 'No connection: keeping your pages on this device…'; return queueMark(p); }
+    errText = net && queued ? 'Still no connection. The pages stay queued and will be marked automatically.'
+      : ERR[e && e.code] || (queued ? 'The queued marking did not come through. It will try again; or tap Try marking now.' : 'The marking did not come through. Try again; your pages are still attached.');
+  }
+  busy = false; liveText = ''; renderChapters(); renderList(); renderSheet();
+}
+
+async function giveUp(p) {
+  if (busy) return;
+  const s = await getSample();
+  if (!s) { errText = 'Solutions only work after you add your Anthropic API key in Settings.'; renderSheet(); return; }
+  const r = rec(p.id);
+  if (r.running) { r.elapsed += Date.now() - r.started; r.running = false; }
+  busy = true; errText = ''; liveText = 'Writing the solution…'; renderSheet();
+  try {
+    const out = await s(`${problemBlock(p)}
+
+Write a complete, rigorous model solution in Markdown with LaTeX in $...$ and $$...$$. Short paragraphs, every step justified. No preamble.`, { modelTier: 'complex', cache: false, onText: ({ text }) => { const st = $('#status'); if (st) st.textContent = text.slice(-160); } });
+    r.solutionFirst = true;
+    r.mark = { score: 0, quote: '', gap: 'Solution read before finishing. Close it, then write your own version from memory.', confidence: 'high', review: false, transcript: '', solution: out.text, overTimer: false, at: Date.now() };
+    save(p.id);
+  } catch (e) { errText = ERR[e && e.code] || 'The solution did not come through. Try again.'; }
+  busy = false; liveText = ''; renderChapters(); renderList(); renderSheet();
+}
+
+/* ---------- Exam Room: monthly checkpoint exams (curriculum/exercise-protocol.md) ---------- */
+const EX_KEY = 'study-desk-exams-v1';
+const EXAM_MS = 90 * 60 * 1000;
+const KIND_LABEL = { definition: 'Definition or statement', exercise: 'Standard exercise', proof: 'Proof or derivation', transfer: 'Transfer to ML' };
+let exams = {};
+try { exams = JSON.parse(localStorage.getItem(EX_KEY) || '{}') || {}; } catch (e) { exams = {}; }
+let exImages = [], exBusy = false, exLive = '', exErr = '', exTick = null, exSel = null;
+const exId = n => BOOK + '-checkpoint-' + n;
+const exList = () => Object.values(exams).filter(x => x && x.book === BOOK).sort((a, b) => a.n - b.n);
+const exOpen = () => exList().find(x => x.status !== 'marked');
+const exQKey = id => 'exam:' + id;
+function exSave(x) {
+  x.updatedAt = Date.now(); exams[x.id] = x;
+  try { localStorage.setItem(EX_KEY, JSON.stringify(exams)); } catch (e) {}
+  if (db) db.doc('exams/' + x.id).set({ book: BOOK, checkpoint: x.n, status: x.status, score: x.marks ? x.marks.outOf10 : null, updatedAt: x.updatedAt, json: JSON.stringify(x) })
+    .then(() => setSync('Saved · syncing to your private repo')).catch(() => setSync('Saved on this device; repo sync will retry'));
+  updateQueueCount();
+}
+function exElapsed(x) { return (x.elapsed || 0) + (x.running ? Date.now() - x.startedAt : 0); }
+function exChapterDefault() {
+  const last = exList().filter(x => x.status === 'marked').pop();
+  const since = last ? last.createdAt : 0;
+  const touched = CHAPTERS.filter(c => c.problems.some(p => attempts[p.id] && attempts[p.id].updatedAt > since)).map(c => c.n);
+  return touched.length ? touched : [CHAPTERS[0].n];
+}
+function weakItems(chapters) {
+  const out = [];
+  CHAPTERS.filter(c => chapters.includes(c.n)).forEach(c => c.problems.forEach(p => {
+    const r = attempts[p.id]; const s = r ? finalScore(r) : null;
+    if (s !== null && s <= 1) out.push(`- Exercise ${p.id} (${p.why}), scored ${s}/3. Gap: ${(r.mark && r.mark.gap) || 'n/a'}`);
+  }));
+  const last = exList().filter(x => x.status === 'marked').pop();
+  if (last && last.marks) last.marks.perQuestion.forEach(q => {
+    if (q.score <= 1) { const lq = last.questions.find(z => z.n === q.n); if (lq) out.push(`- Checkpoint ${last.n} question ${q.n} (missed, ${q.score}/3): ${lq.text}`); }
+  });
+  return out;
+}
+
+function renderExam() {
+  clearInterval(exTick); exTick = null;
+  renderChapters();
+  const box = $('#exam');
+  const x = exSel ? exams[exSel] : exOpen();
+  const hist = exList().filter(z => z.status === 'marked');
+  if (!x) {
+    const nextN = (exList().reduce((a, z) => Math.max(a, z.n), 0)) + 1;
+    const def = exChapterDefault();
+    box.innerHTML = `
+      <div class="block">
+        <p class="eyebrow">Checkpoint ${nextN}</p>
+        <h2 class="ptitle">Prepare a checkpoint exam</h2>
+        <p class="prose">Six questions, 90 minutes, closed book: 2 definitions or statements, 2 standard exercises, 1 proof or derivation and 1 transfer question that applies the idea to ML. About a third come from items you scored 0–1, and missed questions from your last checkpoint come back.</p>
+        <p class="note">Prepare it while you're online. The questions are saved on this device, so you can sit the exam offline and hand it in later.</p>
+        <fieldset class="chs"><legend class="note">Chapters covered</legend>
+          ${CHAPTERS.map(c => `<label class="chk"><input type="checkbox" value="${c.n}" ${def.includes(c.n) ? 'checked' : ''}> Ch. ${c.n} · ${esc(c.name)}</label>`).join('')}
+        </fieldset>
+        <div class="row"><button class="btn primary" id="exprep" ${exBusy ? 'disabled' : ''}>Prepare exam</button></div>
+        <p class="status" id="exstatus">${exBusy ? esc(exLive || 'Writing your questions…') : ''}</p>
+        ${exErr ? `<p class="err">${esc(exErr)}</p>` : ''}
+      </div>
+      ${historyHtml(hist)}`;
+    wireExam(null);
+    return;
+  }
+  const left = EXAM_MS - exElapsed(x);
+  const started = x.status !== 'ready';
+  const qs = x.questions.map(q => `<li class="exq"><div class="eyebrow"><span>Q${q.n}</span><span>·</span><span>${esc(KIND_LABEL[q.kind] || q.kind)}</span><span>·</span><span>Ch. ${esc(q.chapter)}</span>${q.from && q.from !== 'new' ? '<span>·</span><span class="tag">retest</span>' : ''}</div><div class="prose">${md(q.text)}</div>${x.marks ? qMarkHtml(x, q.n) : ''}</li>`).join('');
+  let body = '';
+  if (x.status === 'ready') {
+    body = `<p class="prose">Ready when you are: ${x.questions.length} questions on ch. ${x.chapters.join(', ')}. The questions stay hidden until you start. Write on pages <code>ckpt-${x.n} q1</code> to <code>q6</code> in your GoodNotes notebook, closed book, no Claude.</p>
+      <div class="row"><button class="btn primary" id="exstart">Start the 90 minutes</button><button class="btn quiet danger" id="exdiscard">Discard this exam</button></div>`;
+  } else if (x.status === 'sitting') {
+    body = `<div class="clockline"><span class="clock ${left < 0 ? 'over' : ''}" id="exclock">${left >= 0 ? mmss(left) : '+' + mmss(-left)}</span><span class="sub">${left > 0 ? 'left' : 'over time (logged)'}</span></div>
+      <div class="row"><button class="btn" id="expause">${x.running ? 'Pause' : 'Resume'}</button><button class="btn primary" id="exfinish">Finish and hand in</button></div>
+      <ol class="exqs">${qs}</ol>`;
+  } else if (x.status === 'handin' || x.status === 'queued') {
+    body = `${x.status === 'queued'
+        ? `<div class="queued"><p class="prose"><strong>Queued:</strong> ${x.queuedPages} page${x.queuedPages > 1 ? 's' : ''} saved on this device. The exam will be marked as soon as you're back online.</p>
+           <div class="row"><button class="btn primary" id="exmarkq" ${exBusy ? 'disabled' : ''}>Try marking now</button><button class="btn quiet danger" id="exunqueue" ${exBusy ? 'disabled' : ''}>Remove the queued pages</button></div></div>`
+        : `<p class="prose">Time used: ${mmss(exElapsed(x))}. Export pages <code>ckpt-${x.n} q1</code>–<code>q6</code> from GoodNotes as images (Share → Export → Image), or take photos, then add them <em>in order</em>.</p>
+           <label class="file" for="expages"><span class="note">Add all the pages for this exam.</span><input id="expages" type="file" accept="image/*" multiple></label>
+           <div class="thumbs" id="exthumbs"></div>
+           <div class="row"><button class="btn primary" id="exmark" ${exBusy ? 'disabled' : ''}>Mark my exam</button></div>`}
+      <p class="status" id="exstatus">${exBusy ? esc(exLive || 'Marking…') : ''}</p>
+      ${exErr ? `<p class="err">${esc(exErr)}</p>` : ''}
+      <details><summary>The questions</summary><ol class="exqs">${qs}</ol></details>`;
+  } else if (x.status === 'marked') {
+    const m = x.marks;
+    body = `<div class="verdict"><div class="score"><span class="big">${m.outOf10}/10</span><span class="lbl">${m.total} of ${x.questions.length * 3} points</span><span class="meta">time ${mmss(exElapsed(x))}${m.review ? ' · flagged for review' : ''}</span></div></div>
+      <ol class="exqs">${qs}</ol>
+      ${m.transcript ? `<details><summary>Transcript of your pages</summary><div class="prose">${md(m.transcript)}</div></details>` : ''}
+      <label for="expm" class="note">Post-mortem: what to fix before the next checkpoint?</label>
+      <textarea id="expm" rows="2">${esc(x.postmortem || '')}</textarea>
+      <p class="note">Questions you scored 0–1 come back in the next checkpoint. The Sunday review files this exam under <code>books/${BOOK}/exams/checkpoint-${x.n}/</code>.</p>
+      ${exSel ? '<div class="row"><button class="btn quiet" id="exback">← All checkpoints</button></div>' : ''}`;
+  }
+  box.innerHTML = `<div class="block"><p class="eyebrow">Checkpoint ${x.n} · ch. ${x.chapters.join(', ')}</p><h2 class="ptitle">${x.status === 'marked' ? 'Result' : x.status === 'ready' ? 'Exam ready' : x.status === 'sitting' ? 'Exam in progress' : 'Hand in'}</h2>${body}</div>${x.status === 'marked' || exSel ? historyHtml(hist) : ''}`;
+  wireExam(x);
+  typeset(box);
+  if (x.status === 'sitting' && x.running) exTick = setInterval(() => {
+    const el = document.getElementById('exclock'); if (!el) return;
+    const l = EXAM_MS - exElapsed(x); el.textContent = l >= 0 ? mmss(l) : '+' + mmss(-l); el.classList.toggle('over', l < 0);
+  }, 1000);
+}
+function qMarkHtml(x, n) {
+  const q = (x.marks.perQuestion || []).find(z => z.n === n); if (!q) return '';
+  const sol = (x.marks.solutions || []).find(z => z.n === n);
+  return `<div class="qmark"><span class="pill s${q.score}">${q.score}/3</span>${q.quote ? `<div class="quote prose">${md(q.quote)}</div>` : ''}${q.gap ? `<div class="prose"><p><strong>Gap:</strong> ${md(q.gap).replace(/^<p>|<\/p>$/g, '')}</p></div>` : ''}${sol ? `<details><summary>Model solution</summary><div class="prose">${md(sol.solution)}</div></details>` : ''}</div>`;
+}
+function historyHtml(hist) {
+  if (!hist.length) return '';
+  return `<div class="block"><h3>Past checkpoints</h3><ul class="exhist">${hist.slice().reverse().map(z => `<li><button class="item" data-ex="${z.id}"><span class="id">#${z.n}</span><span class="why">ch. ${z.chapters.join(', ')} · ${new Date(z.finishedAt || z.updatedAt).toLocaleDateString([], { dateStyle: 'medium' })}</span><span class="pill s${z.marks.outOf10 >= 7 ? 3 : z.marks.outOf10 >= 5 ? 2 : 1}">${z.marks.outOf10}/10</span></button></li>`).join('')}</ul></div>`;
+}
+function wireExam(x) {
+  const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  $('#exam').querySelectorAll('[data-ex]').forEach(b => b.addEventListener('click', () => { exSel = b.dataset.ex; renderExam(); window.scrollTo({ top: 0 }); }));
+  on('exback', () => { exSel = null; renderExam(); });
+  on('exprep', () => prepareExam());
+  if (!x) return;
+  on('exstart', () => { x.status = 'sitting'; x.startedAt = Date.now(); x.running = true; x.elapsed = 0; exSave(x); renderExam(); });
+  on('exdiscard', () => { if (!confirm('Discard this prepared exam? You can prepare a new one.')) return; delete exams[x.id]; try { localStorage.setItem(EX_KEY, JSON.stringify(exams)); } catch (e) {} if (db) db.doc('exams/' + x.id).set({ book: BOOK, checkpoint: x.n, status: 'discarded', updatedAt: Date.now(), json: JSON.stringify(Object.assign({}, x, { status: 'discarded' })) }); renderExam(); renderChapters(); });
+  on('expause', () => { if (x.running) { x.elapsed = exElapsed(x); x.running = false; } else { x.startedAt = Date.now(); x.running = true; } exSave(x); renderExam(); });
+  on('exfinish', () => { if (!confirm('Finish the exam and hand it in? The clock stops.')) return; x.elapsed = exElapsed(x); x.running = false; x.status = 'handin'; x.finishedAt = Date.now(); exSave(x); renderExam(); });
+  on('exmark', () => markExam(x));
+  on('exmarkq', async () => { const b = await Bridge.hub.files.get(exQKey(x.id)); if (b && b.length) markExam(x, b); else { x.status = 'handin'; exSave(x); renderExam(); } });
+  on('exunqueue', async () => { if (!confirm('Remove the queued pages? You can attach them again.')) return; await Bridge.hub.files.del(exQKey(x.id)).catch(() => {}); x.status = 'handin'; exSave(x); renderExam(); });
+  const pm = document.getElementById('expm'); if (pm) pm.addEventListener('change', () => { x.postmortem = pm.value; exSave(x); });
+  const inp = document.getElementById('expages');
+  if (inp) inp.addEventListener('change', () => { exImages = Array.from(inp.files || []); $('#exthumbs').innerHTML = exImages.map(f => `<img alt="Page preview" src="${URL.createObjectURL(f)}">`).join(''); });
+}
+
+async function prepareExam() {
+  if (exBusy) return;
+  const chapters = Array.from($('#exam').querySelectorAll('.chs input:checked')).map(i => +i.value);
+  if (!chapters.length) { exErr = 'Pick at least one chapter.'; renderExam(); return; }
+  const s = await getSample();
+  if (!s) { exErr = 'Preparing an exam needs your Anthropic API key. Add it in Settings.'; renderExam(); return; }
+  if (!navigator.onLine) { exErr = 'Preparing an exam needs a connection. Do it before you go offline; you can then sit it offline.'; renderExam(); return; }
+  exBusy = true; exErr = ''; exLive = 'Writing your questions…'; renderExam();
+  const scope = CHAPTERS.filter(c => chapters.includes(c.n)).map(c => `Chapter ${c.n}: ${c.name}. Exercises set: ${c.problems.map(p => `${p.id} (${p.why})`).join('; ')}.`).join('\n');
+  const weak = weakItems(chapters);
+  const prompt = `You are setting a closed-book, 90-minute checkpoint exam for ${WHO} working through Mathematics for Machine Learning (Deisenroth, Faisal, Ong, 2020).
+Scope:
+${scope}
+
+Format: exactly 6 questions:
+- 2 of kind "definition": state a definition or theorem precisely (optionally with a one-line example or consequence).
+- 2 of kind "exercise": a standard computation in the style of the book's exercises, fully self-contained with all numbers given. Do NOT reuse the listed exercises; write fresh ones of the same type.
+- 1 of kind "proof": a short proof or derivation.
+- 1 of kind "transfer": apply an idea from these chapters to a machine-learning setting (e.g. least squares, PCA, gradients of a loss).
+Each question should take about 15 minutes by hand. Spread them across the chapters in scope.
+${weak.length ? `About a third of the questions (2 of 6) must re-test these weak spots, as fresh questions on the same idea (not copies):\n${weak.join('\n')}` : 'There are no weak spots on record yet, so all questions are new.'}
+Use LaTeX in $...$ and $$...$$. Plain text otherwise.
+Return ONLY a JSON object: {"questions": [{"n": 1, "kind": "definition"|"exercise"|"proof"|"transfer", "chapter": <number>, "from": "new" | "<the exercise id or checkpoint question it re-tests>", "text": "<the question>"}]} with n from 1 to 6.`;
+  try {
+    const v = await s.json(prompt, { modelTier: 'complex', cache: false });
+    const qs = (v && Array.isArray(v.questions) ? v.questions : []).slice(0, 6).map((q, i) => ({ n: i + 1, kind: String(q.kind || 'exercise'), chapter: q.chapter, from: q.from || 'new', text: String(q.text || '') })).filter(q => q.text);
+    if (qs.length < 4) throw { code: 'bad_shape' };
+    const n = exList().reduce((a, z) => Math.max(a, z.n), 0) + 1;
+    const x = { id: exId(n), book: BOOK, n, chapters, status: 'ready', createdAt: Date.now(), questions: qs, elapsed: 0, running: false, postmortem: '' };
+    exSave(x); exSel = null;
+  } catch (e) { exErr = ERR[e && e.code] || 'The exam did not come through. Try again.'; }
+  exBusy = false; exLive = ''; renderExam(); renderChapters();
+}
+
+async function queueExam(x) {
+  try {
+    const blocks = await Bridge.hub.prepareImages(exImages);
+    await Bridge.hub.files.put(exQKey(x.id), blocks);
+    x.status = 'queued'; x.queuedPages = blocks.length; exImages = []; exErr = ''; exSave(x);
+  } catch (e) { exErr = 'Could not keep the pages on this device: ' + (e && e.message || e); }
+  exBusy = false; exLive = ''; renderExam();
+}
+async function markExam(x, queued) {
+  if (exBusy) return;
+  if (!queued && !exImages.length) { exErr = 'Add your exam pages first.'; renderExam(); return; }
+  if (!queued && !navigator.onLine) { exBusy = true; exLive = 'Offline: keeping your pages on this device…'; renderExam(); return queueExam(x); }
+  const s = await getSample();
+  if (!s) { exErr = 'Marking needs your Anthropic API key. Add it in Settings.'; renderExam(); return; }
+  exBusy = true; exErr = ''; exLive = 'Reading your pages and marking each question…'; renderExam();
+  const prompt = `You are marking a closed-book checkpoint exam for a self-studying learner (Mathematics for Machine Learning, ch. ${x.chapters.join(', ')}). The attached images are the learner's handwritten pages, in order; each answer should be headed with its question number.
+
+The questions:
+${x.questions.map(q => `Q${q.n} (${q.kind}): ${q.text}`).join('\n\n')}
+
+Rubric, per question:
+3 = Complete: correct, every step justified
+2 = Minor gap: right method, a small slip or one unjustified step
+1 = Right idea: sound approach, but a major step missing or wrong
+0 = No working approach (or not attempted)
+
+Rules:
+1. Solve each question yourself first, privately, and mark against your solution.
+2. Transcribe the learner's work to Markdown with LaTeX; write [?] for anything unreadable, never guess.
+3. Score each question 0-3. If torn between two scores, give the lower and set "review": true.
+4. For each question: "quote" is the learner's line you penalise, verbatim from your transcript ("" if 3); "gap" is one sentence naming what is missing or wrong ("" if none); "confidence" is high/medium/low.
+5. "solutions": a complete model solution per question, Markdown with LaTeX.
+Return ONLY a JSON object: {"transcript": string, "review": boolean, "perQuestion": [{"n": number, "score": 0|1|2|3, "quote": string, "gap": string, "confidence": string}], "solutions": [{"n": number, "solution": string}]}`;
+  try {
+    const opts = { modelTier: 'complex', cache: false };
+    if (queued) opts.imageBlocks = queued; else opts.images = exImages;
+    const v = await s.json(prompt, opts);
+    if (!v || !Array.isArray(v.perQuestion)) throw { code: 'bad_shape' };
+    const per = x.questions.map(q => { const r = v.perQuestion.find(z => +z.n === q.n) || { score: 0, quote: '', gap: 'Not found on the pages.', confidence: 'low' }; return { n: q.n, score: Math.max(0, Math.min(3, Math.round(+r.score || 0))), quote: r.quote || '', gap: r.gap || '', confidence: r.confidence || '' }; });
+    const total = per.reduce((a, q) => a + q.score, 0);
+    x.marks = { perQuestion: per, total, outOf10: Math.round(total / (x.questions.length * 3) * 10), transcript: v.transcript || '', solutions: Array.isArray(v.solutions) ? v.solutions : [], review: !!v.review, at: Date.now() };
+    x.status = 'marked'; x.queuedPages = 0; exImages = []; exSel = x.id;
+    if (queued) Bridge.hub.files.del(exQKey(x.id)).catch(() => {});
+    exSave(x);
+  } catch (e) {
+    const net = e && (e.code === 'offline' || e.code === 'network');
+    if (net && !queued && exImages.length) { exLive = 'No connection: keeping your pages on this device…'; return queueExam(x); }
+    exErr = net && queued ? 'Still no connection. The pages stay queued and will be marked automatically.' : ERR[e && e.code] || 'The marking did not come through. Try again.';
+  }
+  exBusy = false; exLive = ''; renderExam(); renderChapters();
+}
+async function processExamQueue() {
+  if (exBusy || !navigator.onLine || !Bridge.hub.hasKey()) return;
+  for (const x of exList().filter(z => z.status === 'queued')) {
+    const b = await Bridge.hub.files.get(exQKey(x.id)).catch(() => null);
+    if (!b || !b.length) { x.status = 'handin'; exSave(x); continue; }
+    await markExam(x, b);
+    if (!navigator.onLine) break;
+  }
+}
+window.addEventListener('online', () => setTimeout(processExamQueue, 3000));
+setInterval(processExamQueue, 60000);
+
+/* ---------- boot, then light up account sync ---------- */
+renderChapters(); renderList(); renderSheet();
+
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  try {
+    const d = await window.claude.use('db');
+    if (!d) return;
+    const snap = await d.collection('attempts').get();
+    let changed = false;
+    snap.docs.forEach(doc => {
+      const v = doc.data() || {};
+      if (!v.problem || !PROBLEMS[v.problem] || v.book !== BOOK) return;
+      const local = attempts[v.problem];
+      if (!local || (v.updatedAt || 0) > (local.updatedAt || 0)) {
+        try { attempts[v.problem] = Object.assign(blank(), JSON.parse(v.json)); changed = true; } catch (e) {}
+      }
+    });
+    try {
+      const es = await d.collection('exams').get();
+      es.docs.forEach(doc => {
+        const v = doc.data() || {}; if (v.book !== BOOK || !v.json) return;
+        let x; try { x = JSON.parse(v.json); } catch (e) { return; }
+        if (x.status === 'discarded') { if (exams[x.id] && (exams[x.id].updatedAt || 0) <= (v.updatedAt || 0)) delete exams[x.id]; return; }
+        if (!exams[x.id] || (v.updatedAt || 0) > (exams[x.id].updatedAt || 0)) { exams[x.id] = x; changed = true; }
+      });
+      try { localStorage.setItem(EX_KEY, JSON.stringify(exams)); } catch (e) {}
+    } catch (e) {}
+    db = d; setSync('Saved · syncing to your private repo');
+    updateQueueCount(); setTimeout(processQueue, 1500); setTimeout(processExamQueue, 2500);
+    if (changed) {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(attempts)); } catch (e) {}
+      renderChapters(); renderList(); if (!busy) renderSheet();
+    }
+  } catch (e) { setSync('Saved on this device'); }
+})();
+});
+</script>
+
+</body></html>
