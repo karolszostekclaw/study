@@ -32,7 +32,7 @@ main { flex: 1; position: relative; min-height: 0; }
 iframe.screen { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
 [hidden] { display: none !important; }
 
-nav.bar { display: grid; grid-template-columns: repeat(6, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+nav.bar { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
 nav.bar button { all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 9px; font-size: .72rem; color: var(--muted); position: relative; -webkit-tap-highlight-color: transparent; }
 nav.bar button svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 nav.bar button[aria-selected="true"] { color: var(--ink); font-weight: 600; }
@@ -69,6 +69,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   <iframe class="screen" id="f-desk" title="Desk" hidden></iframe>
   <iframe class="screen" id="f-papers" title="Papers" hidden></iframe>
   <iframe class="screen" id="f-plan" title="Plan" hidden></iframe>
+  <iframe class="screen" id="f-drill" title="Drill" hidden></iframe>
   <section id="settings" hidden aria-label="Settings">
     <div class="page">
       <div><h1>Settings</h1><p class="sub">Keys stay on this device. Cards, problems and your attempts live in your private repo.</p></div>
@@ -121,8 +122,9 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
         <p class="note"><b>Study</b>: choose which topics show in the Feed, read a topic in order, or sit a 5-question timed mini exam.</p>
         <p class="note"><b>Papers</b>: one paper a week, in order. Get 3 questions to read with, a section-by-section guide (attach the PDF for a better one), then explain the paper back and get it checked. Notes save to <code>papers/&lt;paper&gt;/</code> in your repo.</p>
         <p class="note"><b>Desk → Exams</b>: the monthly checkpoint. Prepare it while you're online, then sit it offline: 90 minutes, closed book. Hand in your pages and each question is marked; anything you score 0–1 comes back next time.</p>
-        <p class="note"><b>Plan</b>: the whole curriculum as weeks with dates. Each week has a Mon–Thu book unit, a Saturday unit (coding, or the monthly checkpoint), a work-time item and any to-dos. Tick things off as you go. <b>Progress</b> (top of the tab) turns the ticks into bars and a checklist you can screenshot, share as an image or copy as text for a recruiter or a learning app; notes, solutions, promo items and to-dos stay out. Behind? <b>Delay a day</b> or <b>Delay a week</b> moves this week and everything after it back; breaks stay put, and you can undo. The plan comes from <code>scripts/build_schedule.py</code> in your repo.</p>
+        <p class="note"><b>Plan</b>: the whole curriculum as weeks with dates. Each week has a Mon–Thu book unit, a Saturday unit (coding, or the monthly checkpoint), a work-time item and any to-dos. Tick things off as you go. <b>Progress</b> (top of the tab) turns the ticks into bars and a checklist you can screenshot, share as an image or copy as text to share or paste into a learning app; notes, solutions, promo items and to-dos stay out. Behind? <b>Delay a day</b> or <b>Delay a week</b> moves this week and everything after it back; breaks stay put, and you can undo. The plan comes from <code>scripts/build_schedule.py</code> in your repo.</p>
         <p class="note"><b>Desk</b>: sit-down exercise sessions.</p>
+        <p class="note"><b>Drill</b>: timed practice from a catalog in your private repo. <b>Today</b> shows what's learned, re-tests that are due and what to do next. The drills themselves happen on a laptop with the <code>drill</code> tool (<code>drill/README.md</code> in your repo): blank file, no autocomplete, timed and tested; each attempt syncs here. A drill is learned after two first-run passes within its target time on different days, then comes back after 30 days, 90 days and every 6 months. <b>Drills</b> lists them all with the task, the interface and your times, and you can log an attempt done on paper. <b>Units</b> is for the rest of the course: tick parts off, and log mock scores out of 5.</p>
         <ol>
           <li>Desk → pick the chapter → pick a problem. Anchors count towards the chapter score; extras are practice. "What you need" is free to read.</li>
           <li>Tap <b>Start</b> and work on paper or in GoodNotes, with the problem number at the top of the page. After 25 minutes you can ask for a hint, which caps that problem at 2/3.</li>
@@ -149,6 +151,7 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   <button role="tab" data-go="desk" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L10 19H5v-5z"/><path d="M12.5 6.5l5 5"/></svg>Desk</button>
   <button role="tab" data-go="papers" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 15.5h5M10 9h2"/></svg>Papers</button>
   <button role="tab" data-go="plan" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg>Plan</button>
+  <button role="tab" data-go="drill" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M12 2.5V6M18.5 6.5l1.5-1.5"/></svg>Drill</button>
   <button role="tab" data-go="settings" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings<span class="dot" id="sync-dot" hidden></span></button>
 </nav>
 
@@ -156,10 +159,10 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 <script>
 (() => {
 'use strict';
-const VERSION = '1.4.2';
+const VERSION = '1.5.0';
 const $ = s => document.querySelector(s);
-const frames = { feed: $('#f-feed'), desk: $('#f-desk'), papers: $('#f-papers'), plan: $('#f-plan') };
-const src = { feed: 'feed.html', desk: 'desk.html', papers: 'papers.html', plan: 'plan.html' };
+const frames = { feed: $('#f-feed'), desk: $('#f-desk'), papers: $('#f-papers'), plan: $('#f-plan'), drill: $('#f-drill') };
+const src = { feed: 'feed.html', desk: 'desk.html', papers: 'papers.html', plan: 'plan.html', drill: 'drill.html' };
 let current = null;
 
 function ensure(name) {
@@ -168,7 +171,7 @@ function ensure(name) {
   return f;
 }
 function go(view) {
-  if (!['feed', 'study', 'desk', 'papers', 'plan', 'settings'].includes(view)) view = 'feed';
+  if (!['feed', 'study', 'desk', 'papers', 'plan', 'drill', 'settings'].includes(view)) view = 'feed';
   current = view;
   document.querySelectorAll('nav.bar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.go === view)));
   const frameName = view === 'study' ? 'feed' : view;
@@ -179,8 +182,9 @@ function go(view) {
     const switchTo = () => { try { f.contentWindow.__show && f.contentWindow.__show(view === 'study' ? 'study' : 'feed'); } catch (e) {} };
     if (f.contentWindow && f.contentWindow.__show) switchTo(); else f.addEventListener('load', () => setTimeout(switchTo, 50), { once: true });
   }
-  if (frameName === 'desk' || frameName === 'papers' || frameName === 'plan') ensure(frameName);
+  if (['desk', 'papers', 'plan', 'drill'].includes(frameName)) ensure(frameName);
   if (frameName === 'plan') { try { frames.plan.contentWindow.__planRender && frames.plan.contentWindow.__planRender(); } catch (e) {} }
+  if (frameName === 'drill') { try { frames.drill.contentWindow.__drillRender && frames.drill.contentWindow.__drillRender(); } catch (e) {} }
   if (view === 'settings') fillSettings();
   try { localStorage.setItem('study-view', view); } catch (e) {}
 }

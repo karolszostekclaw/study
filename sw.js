@@ -1,7 +1,7 @@
 /* Offline support. App files: network first, cached copy when offline.
    MathJax and icons: cache first. Requests to GitHub and Anthropic are never cached. */
-const CACHE = 'study-1.4.2';
-const CORE = ['./', 'index.html', 'feed.html', 'desk.html', 'papers.html', 'plan.html', 'hub.js', 'bridge.js', 'manifest.webmanifest',
+const CACHE = 'study-1.5.0';
+const CORE = ['./', 'index.html', 'feed.html', 'desk.html', 'papers.html', 'plan.html', 'drill.html', 'hub.js', 'bridge.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'vendor/mathjax/tex-svg.js'];
 
 self.addEventListener('install', e => {

@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drill</title>
+<style>
+/* Drill: timed practice drills with spaced re-tests, plus a course's units. The catalog is
+   app-data/content/drills.json; drills are done on a laptop with drill/drill.py in the private repo, which logs
+   to app-data/drills/attempts.json. This tab reads that log and writes app-data/drills/app.json
+   (unit ticks, mock scores, attempts logged by hand). Everything course-specific comes from the catalog. */
+:root {
+  --bg: #eef1ef; --surface: #fbfcfb; --ink: #17201c; --muted: #56645d; --line: #d3dbd6;
+  --accent: #2a55c9; --good: #1b7449; --warn: #96700f; --bad: #b3372f; --tint: rgba(42, 85, 201, .07);
+  --f-ui: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #131b18; --surface: #1a2420; --ink: #e5eae3; --muted: #9ba89f; --line: #2b3933; --accent: #93b1ff; --good: #72cf98; --warn: #e3c46b; --bad: #f08b7f; --tint: rgba(147, 177, 255, .08); }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-ui); -webkit-text-size-adjust: 100%; }
+body { padding: 0 max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:is(button, summary, input, select, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+[hidden] { display: none !important; }
+a { color: var(--accent); }
+.wrap { max-width: 40rem; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 16px 0 6px; border-bottom: 1px solid var(--line); }
+.top h1 { font-size: 1.3rem; margin: 0; }
+.top h1 i { font-weight: 400; color: var(--muted); font-style: normal; }
+.sync { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { border: 0; background: none; padding: 7px; border-radius: 8px; color: var(--muted); }
+.seg button[aria-selected="true"] { background: var(--ink); color: var(--surface); font-weight: 600; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.panel h2 { font-size: 1.05rem; margin: 0; }
+.eyebrow { font-family: var(--f-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; }
+.note { color: var(--muted); font-size: .84rem; margin: 0; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fact { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.fact b { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: .74rem; }
+.fact.due b { color: var(--bad); }
+.list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.list li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.list li small { grid-column: 1 / -1; color: var(--muted); font-size: .78rem; }
+.list li .tag { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.list li.due { border-color: var(--bad); }
+code, pre { font-family: var(--f-mono); font-size: .8rem; }
+pre { margin: 0; padding: 8px 10px; background: var(--bg); border-radius: 8px; overflow-x: auto; white-space: pre; line-height: 1.5; }
+
+/* drills */
+details.sec { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+details.sec > summary { list-style: none; display: grid; grid-template-columns: 3.2rem 1fr auto; gap: 8px; align-items: center; padding: 10px 12px; cursor: pointer; }
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec .sid { font-family: var(--f-mono); font-size: .78rem; color: var(--muted); }
+details.sec .stt { font-weight: 500; min-width: 0; }
+details.sec .cnt { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+details.sec .cnt .d { color: var(--bad); }
+details.sec .items { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 0 10px 10px; }
+details.it { border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+details.it > summary { list-style: none; display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; padding: 8px 10px; cursor: pointer; }
+details.it > summary::-webkit-details-marker { display: none; }
+details.it .ttl { min-width: 0; }
+details.it .meta { font-family: var(--f-mono); font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.chips { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: .74rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip.learning { border-color: var(--warn); color: var(--warn); }
+.chip.learned { border-color: var(--good); color: var(--good); }
+.chip.due { border-color: var(--bad); color: var(--bad); font-weight: 600; }
+details.it .body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 0 10px 10px; font-size: .88rem; }
+.prompt { margin: 0; }
+.hist { margin: 0; padding-left: 16px; font-size: .8rem; color: var(--muted); display: grid; gap: 2px; }
+form.log { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; padding: 10px; border: 1px dashed var(--line); border-radius: 10px; }
+form.log label { display: grid; gap: 3px; font-size: .78rem; color: var(--muted); }
+form.log label.cb { display: flex; gap: 6px; align-items: center; font-size: .84rem; color: var(--ink); }
+form.log select, form.log input[type=text] { padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); width: 100%; }
+form.log .full { grid-column: 1 / -1; }
+.btn { padding: 8px 13px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.btn.quiet { border-color: transparent; color: var(--muted); padding-inline: 6px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filters select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+
+/* units */
+.ws { display: grid; gap: 8px; }
+.ws > h3 { font-family: var(--f-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 6px 0 0; }
+.unit { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.unit header { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.unit header b { font-weight: 600; }
+.unit header span { font-family: var(--f-mono); font-size: .74rem; color: var(--muted); white-space: nowrap; }
+.unit.done { border-color: var(--good); }
+.unit.done header span { color: var(--good); }
+.part { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; font-size: .88rem; }
+.part input[type=checkbox] { width: 20px; height: 20px; margin: 0; accent-color: var(--good); }
+.part small { color: var(--muted); font-size: .76rem; display: block; }
+.part select { padding: 4px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+.part .sc { font-family: var(--f-mono); font-size: .76rem; color: var(--muted); }
+.part .sc.ok { color: var(--good); }
+.part .dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line); }
+.part .dot.ok { border-color: var(--good); background: var(--good); }
+.part .dot.mid { border-color: var(--warn); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Drill <i id="sub"></i></h1>
+    <span class="sync" id="sync">Saved on this device</span>
+  </header>
+  <div class="seg" role="tablist" aria-label="View">
+    <button role="tab" data-view="today" aria-selected="true">Today</button>
+    <button role="tab" data-view="drills" aria-selected="false">Drills</button>
+    <button role="tab" data-view="units" aria-selected="false">Units</button>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script src="bridge.js"></script>
+<script>
+Bridge.start(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const app = $('#app');
+const CAT = Bridge.content.drills;
+const LANG = { py: 'Python', cpp: 'C++' };
+const COURSE_URL = CAT && CAT.course ? `https://github.com/${Bridge.hub.settings.ghRepo}/blob/${Bridge.hub.settings.ghBranch || 'main'}/${CAT.course}` : '';
+const DRILL_URL = `https://github.com/${Bridge.hub.settings.ghRepo}/blob/${Bridge.hub.settings.ghBranch || 'main'}/drill/README.md`;
+
+if (!CAT || !CAT.sections) {
+  app.innerHTML = `<div class="panel"><h2>No drills yet</h2><p class="note">The catalog lives in your private repo at <code>app-data/content/drills.json</code>. Load it once you're online.</p><div><button class="btn primary" id="load">Load it</button></div><p class="note" id="lmsg"></p></div>`;
+  $('#load').onclick = async () => { try { await Bridge.hub.fetchContent(); location.reload(); } catch (e) { $('#lmsg').textContent = e.message; } };
+  return;
+}
+const ITEMS = CAT.sections.flatMap(s => s.items.map(it => Object.assign({ secTitle: s.title }, it)));
+const BY = Object.fromEntries(ITEMS.map(i => [i.id, i]));
+const TARGETS = CAT.targets || { S: 120, E: 480, M: 900, H: 1500, X: 2700 };
+const INTERVALS = CAT.intervals || [30, 90, 180];
+const EARLY = 3;
+
+/* ---------- dates (local calendar days, as the drill CLI writes them) ---------- */
+const pad = n => String(n).padStart(2, '0');
+const dayStr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => dayStr(new Date());
+const dayNum = s => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
+const numDay = n => { const d = new Date(n * 864e5); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; };
+function isoLocal(d = new Date()) {
+  const off = -d.getTimezoneOffset(), s = off >= 0 ? '+' : '-', a = Math.abs(off);
+  return `${dayStr(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}${s}${pad(Math.floor(a / 60))}:${pad(a % 60)}`;
+}
+const fmtSecs = s => `${Math.floor(s / 60)}:${pad(Math.round(s) % 60)}`;
+const nice = s => { const d = new Date(dayNum(s) * 864e5); return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' }); };
+
+/* ---------- spaced re-tests: the same rules as drill/drill.py (keep them in step) ---------- */
+const limitOf = it => it.limit || TARGETS[it.diff];
+const isOk = (a, it) => !!a.passed && !!a.first && (a.secs == null ? 1e9 : a.secs) <= limitOf(it);
+function unitState(it, attempts, on = today()) {
+  const st = { status: 'new', streak: 0, lastOk: null, due: null, stage: 0, best: null, n: 0, relearn: false, last: null };
+  for (const a of attempts) {
+    st.n++; st.last = a.date;
+    if (a.passed && a.secs != null) st.best = st.best == null ? a.secs : Math.min(st.best, a.secs);
+    const ok = isOk(a, it), day = dayNum(a.date);
+    if (st.status === 'new' || st.status === 'learning') {
+      st.status = 'learning';
+      if (ok) {
+        if (st.streak >= 1 && st.lastOk !== day) Object.assign(st, { status: 'learned', stage: 0, due: day + INTERVALS[0], streak: 2 });
+        else if (st.streak === 0) Object.assign(st, { streak: 1, lastOk: day });
+      } else st.streak = 0;
+    } else if (ok) {
+      if (day >= st.due - EARLY) { st.stage++; st.due = day + INTERVALS[Math.min(st.stage, INTERVALS.length - 1)]; }
+    } else Object.assign(st, { status: 'learning', streak: 0, relearn: true, due: null });
+  }
+  if (st.status === 'learned' && dayNum(on) >= st.due) st.status = 'due';
+  return st;
+}
+const chipText = s => s.status === 'new' ? 'new' : s.status === 'due' ? 're-test due' : s.status === 'learned' ? `learned · ${nice(numDay(s.due))}` : `${s.relearn ? 'relearn' : 'learning'} ${s.streak}/2`;
+
+/* ---------- state ---------- */
+const LS = 'study-drill-v1';
+const blank = () => ({ attempts: [], ticks: {}, scores: [] });
+let mine = blank(), drillLog = { attempts: [] };
+try { const c = JSON.parse(localStorage.getItem(LS) || 'null'); if (c) { mine = Object.assign(blank(), c.mine || {}); drillLog = c.drill || drillLog; } } catch (e) {}
+let db = null, view = 'today', filt = { lang: 'all', show: 'all' };
+const keep = () => { try { localStorage.setItem(LS, JSON.stringify({ mine, drill: drillLog })); } catch (e) {} };
+const setSync = t => { $('#sync').textContent = t; };
+
+// Two devices can both write app.json: merge instead of overwriting.
+function merge(a, b) {
+  const out = blank(), key = x => `${x.at}|${x.id}|${x.lang || ''}`;
+  const am = new Map(); [...(a.attempts || []), ...(b.attempts || [])].forEach(x => am.set(key(x), x));
+  out.attempts = [...am.values()].sort((x, y) => (x.at < y.at ? -1 : 1));
+  const sm = new Map(); [...(a.scores || []), ...(b.scores || [])].forEach(x => sm.set(key(x), x));
+  out.scores = [...sm.values()].sort((x, y) => (x.at < y.at ? -1 : 1));
+  for (const src of [a.ticks || {}, b.ticks || {}]) for (const [k, v] of Object.entries(src)) if (!out.ticks[k] || out.ticks[k].at < v.at) out.ticks[k] = v;
+  return out;
+}
+async function save() {
+  keep(); render();
+  if (!db) { setSync('Saved on this device'); return; }
+  try {
+    const snap = await db.doc('drills/app').get();
+    if (snap.exists) mine = merge(snap.data(), mine);
+    await db.doc('drills/app').set(Object.assign({ note: 'Written by the study app (Drill tab). Attempts from the laptop are in attempts.json.' }, mine));
+    keep(); setSync('Saved · syncing to your private repo');
+  } catch (e) { setSync('Saved on this device; repo sync will retry'); }
+}
+
+function allAttempts() { return [...(drillLog.attempts || []), ...(mine.attempts || [])].filter(a => BY[a.id]).sort((x, y) => (x.at < y.at ? -1 : 1)); }
+function states() {
+  const by = new Map();
+  allAttempts().forEach(a => { const k = a.id + '|' + a.lang; if (!by.has(k)) by.set(k, []); by.get(k).push(a); });
+  const out = new Map();
+  ITEMS.forEach(it => it.langs.forEach(l => out.set(it.id + '|' + l, unitState(it, by.get(it.id + '|' + l) || []))));
+  return out;
+}
+function pickNext(S, n = 4) {
+  const td = today(), doneToday = new Set(allAttempts().filter(a => a.date === td).map(a => a.id + '|' + a.lang));
+  const c = ITEMS.flatMap(it => it.langs.map(l => ({ it, l, s: S.get(it.id + '|' + l) })));
+  const out = [], seen = new Set(), add = (arr, why) => arr.forEach(x => { const k = x.it.id + '|' + x.l; if (!seen.has(k) && out.length < n) { seen.add(k); out.push(Object.assign({ why }, x)); } });
+  add(c.filter(x => x.s.status === 'due').sort((a, b) => a.s.due - b.s.due), 're-test due');
+  add(c.filter(x => x.s.status === 'learning' && x.s.relearn && !doneToday.has(x.it.id + '|' + x.l)), 'relearning');
+  add(c.filter(x => x.s.status === 'learning' && x.s.streak === 1 && !doneToday.has(x.it.id + '|' + x.l)), 'one more success');
+  add(c.filter(x => x.s.status === 'learning' && !doneToday.has(x.it.id + '|' + x.l)), 'not learned yet');
+  add(c.filter(x => x.s.status === 'new'), 'new');
+  return out;
+}
+// unit parts: ticks, or mock scores out of 5 (learned at >= 4, latest score counts)
+const latestScore = id => { const s = (mine.scores || []).filter(x => x.id === id); return s.length ? s[s.length - 1] : null; };
+const partDone = p => p.kind === 'score' ? !!(latestScore(p.id) && latestScore(p.id).score >= 4) : !!(mine.ticks[p.id] && mine.ticks[p.id].on);
+function unitDone(u) {
+  const d = u.parts.filter(partDone).length;
+  if (u.need) return d >= u.need;
+  if (u.need_core) return u.parts.slice(0, u.need_core).every(partDone) && u.parts.slice(u.need_core).filter(partDone).length >= 4;
+  return d === u.parts.length;
+}
+
+/* ---------- views ---------- */
+function render() {
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === view)));
+  const open = new Set([...document.querySelectorAll('details[open][data-k]')].map(d => d.dataset.k));
+  const S = states();
+  app.innerHTML = view === 'today' ? viewToday(S) : view === 'drills' ? viewDrills(S) : viewUnits();
+  open.forEach(k => { const d = app.querySelector(`details[data-k="${CSS.escape(k)}"]`); if (d) d.open = true; });
+}
+function counts(S) {
+  const r = { py: [0, 0], cpp: [0, 0], due: 0 };
+  ITEMS.forEach(it => it.langs.forEach(l => { const s = S.get(it.id + '|' + l); r[l][1]++; if (s.status === 'learned' || s.status === 'due') r[l][0]++; if (s.status === 'due') r.due++; }));
+  return r;
+}
+function viewToday(S) {
+  const c = counts(S), units = CAT.units || [], ud = units.filter(unitDone).length;
+  const due = ITEMS.flatMap(it => it.langs.map(l => ({ it, l, s: S.get(it.id + '|' + l) }))).filter(x => x.s.status === 'due').sort((a, b) => a.s.due - b.s.due);
+  const next = pickNext(S).filter(x => x.why !== 're-test due');
+  const recent = allAttempts().slice(-6).reverse();
+  return `
+  <div class="panel">
+    <div class="facts">
+      <div class="fact"><b>${c.py[0]}<small>/${c.py[1]}</small></b><span>Python drills learned</span></div>
+      <div class="fact"><b>${c.cpp[0]}<small>/${c.cpp[1]}</small></b><span>C++ drills learned</span></div>
+      <div class="fact ${c.due ? 'due' : ''}"><b>${c.due}</b><span>re-tests due</span></div>
+    </div>
+    <p class="note">${units.length ? `Units done: <b>${ud}</b> of ${units.length}. ` : ''}Drills happen on your laptop with <code>drill</code>; they show up here after they sync. <a href="${esc(DRILL_URL)}" target="_blank" rel="noopener">How the drill tool works</a></p>
+  </div>
+  ${due.length ? `<div class="panel"><p class="eyebrow">Re-tests due</p><ul class="list">${due.map(x => `<li class="due"><span>${esc(x.it.title)}</span><span class="tag">${LANG[x.l]}</span><small>${esc(x.it.id)} · due since ${nice(numDay(x.s.due))} · best ${x.s.best != null ? fmtSecs(x.s.best) : '–'}</small></li>`).join('')}</ul></div>` : ''}
+  <div class="panel"><p class="eyebrow">Next at the laptop</p>
+    <ul class="list">${next.map(x => `<li><span>${esc(x.it.title)}</span><span class="tag">${LANG[x.l]} · ${x.it.diff} ${fmtSecs(limitOf(x.it))}</span><small>${esc(x.why)} · <code>drill start ${esc(x.it.id)} -l ${x.l}</code></small></li>`).join('') || '<li><span>Everything is learned and nothing is due.</span></li>'}</ul>
+  </div>
+  <div class="panel"><p class="eyebrow">Recent attempts</p>
+    ${recent.length ? `<ul class="list">${recent.map(a => `<li><span>${esc((BY[a.id] || {}).title || a.id)}</span><span class="tag">${a.passed ? (isOk(a, BY[a.id]) ? '✓ ' : '') + fmtSecs(a.secs || 0) : 'not passed'}</span><small>${nice(a.date)} · ${LANG[a.lang] || a.lang} · ${a.runs || 1} run${(a.runs || 1) > 1 ? 's' : ''}${a.passed && !isOk(a, BY[a.id]) ? (a.first ? ' · over the target' : ' · not first-run') : ''}${a.src === 'app' ? ' · logged here' : ''}</small></li>`).join('')}</ul>` : '<p class="note">No attempts yet. On your Mac: <code>drill</code>.</p>'}
+  </div>`;
+}
+function viewDrills(S) {
+  const showIt = it => {
+    const ls = it.langs.filter(l => filt.lang === 'all' || l === filt.lang);
+    if (!ls.length) return false;
+    if (filt.show === 'all') return true;
+    const sts = ls.map(l => S.get(it.id + '|' + l).status);
+    if (filt.show === 'due') return sts.includes('due');
+    if (filt.show === 'open') return sts.some(s => s === 'new' || s === 'learning' || s === 'due');
+    return true;
+  };
+  const secs = CAT.sections.map(sec => {
+    const its = sec.items.filter(showIt);
+    if (!its.length) return '';
+    const parts = ['py', 'cpp'].filter(l => filt.lang === 'all' || l === filt.lang).map(l => {
+      const ks = sec.items.filter(i => i.langs.includes(l)); if (!ks.length) return '';
+      const n = ks.filter(i => ['learned', 'due'].includes(S.get(i.id + '|' + l).status)).length;
+      return `${l === 'py' ? 'Py' : 'C++'} ${n}/${ks.length}`;
+    }).filter(Boolean).join(' · ');
+    const due = sec.items.reduce((a, i) => a + i.langs.filter(l => S.get(i.id + '|' + l).status === 'due').length, 0);
+    return `<details class="sec" data-k="sec:${esc(sec.id)}"><summary><span class="sid">${esc(sec.id)}</span><span class="stt">${esc(sec.title)}</span><span class="cnt">${parts}${due ? `<br><span class="d">${due} due</span>` : ''}</span></summary>
+      <div class="items">${its.map(it => itemRow(it, S)).join('')}</div></details>`;
+  }).join('');
+  const opt = (v, label, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label}</option>`;
+  return `<div class="filters">
+      <select id="f-lang" aria-label="Language">${opt('all', 'Both languages', filt.lang)}${opt('py', 'Python', filt.lang)}${opt('cpp', 'C++', filt.lang)}</select>
+      <select id="f-show" aria-label="Show">${opt('all', 'All drills', filt.show)}${opt('open', 'Not learned, or due', filt.show)}${opt('due', 'Due only', filt.show)}</select>
+      <a class="note" href="${esc(DRILL_URL)}" target="_blank" rel="noopener">Drill tool</a>
+    </div>${secs || '<p class="note">Nothing matches.</p>'}`;
+}
+function itemRow(it, S) {
+  const chips = it.langs.map(l => { const s = S.get(it.id + '|' + l); return `<span class="chip ${s.status}">${LANG[l]}: ${esc(chipText(s))}${s.best != null ? ` · ${fmtSecs(s.best)}` : ''}</span>`; }).join('');
+  const hist = allAttempts().filter(a => a.id === it.id).slice(-6).reverse();
+  return `<details class="it" data-k="it:${esc(it.id)}"><summary><span class="ttl">${esc(it.title)}</span><span class="meta">${it.diff} · ${fmtSecs(limitOf(it))}</span><span class="chips">${chips}</span></summary>
+    <div class="body">
+      <p class="note"><code>${esc(it.id)}</code>${it.check === 'self' ? ' · self-checked' : ''}</p>
+      <p class="prompt">${esc(it.prompt)}</p>
+      ${it.done_when ? `<p class="note"><b>Done when:</b> ${esc(it.done_when)}</p>` : ''}
+      ${Object.entries(it.iface || {}).filter(([, v]) => v && v.length).map(([l, v]) => `<div><p class="eyebrow">${LANG[l]} interface</p><pre>${esc(v.join('\n'))}</pre></div>`).join('')}
+      ${hist.length ? `<ul class="hist">${hist.map(a => `<li>${nice(a.date)} · ${LANG[a.lang] || a.lang} · ${a.passed ? fmtSecs(a.secs || 0) : 'not passed'}${a.passed && !a.first ? ' · not first-run' : ''}${a.src === 'app' ? ' · logged here' : ''}</li>`).join('')}</ul>` : ''}
+      <form class="log" data-id="${esc(it.id)}">
+        <p class="note full">Did it away from the drill tool (on paper, a whiteboard, a mock)? Log it by hand.</p>
+        <label>Language<select name="lang">${it.langs.map(l => `<option value="${l}">${LANG[l]}</option>`).join('')}</select></label>
+        <label>Time (m:ss)<input type="text" name="time" inputmode="numeric" placeholder="12:30" required></label>
+        <label class="cb"><input type="checkbox" name="passed" checked> Worked</label>
+        <label class="cb"><input type="checkbox" name="first" checked> First run</label>
+        <div class="full"><button class="btn" type="submit">Log attempt</button></div>
+      </form>
+    </div></details>`;
+}
+function viewUnits() {
+  const groups = CAT.groups || [[null, 'Units']];
+  const units = CAT.units || [];
+  const unitHtml = u => {
+    const d = u.parts.filter(partDone).length, done = unitDone(u);
+    const parts = u.parts.map(p => {
+      if (p.kind === 'score') {
+        const ls = latestScore(p.id);
+        return `<div class="part"><span class="dot ${ls ? (ls.score >= 4 ? 'ok' : 'mid') : ''}"></span><span>${esc(p.title)}${ls ? `<small>last mock ${ls.score}/5 · ${nice(ls.date)}</small>` : ''}</span>
+          <select data-score="${esc(p.id)}" aria-label="Log a mock score for ${esc(p.title)}"><option value="">score…</option>${[1, 2, 3, 4, 5].map(n => `<option value="${n}">${n}/5</option>`).join('')}</select></div>`;
+      }
+      const t = mine.ticks[p.id];
+      return `<label class="part"><input type="checkbox" data-tick="${esc(p.id)}" ${t && t.on ? 'checked' : ''}><span>${esc(p.title)}${t && t.on ? `<small>done ${nice(t.date)}</small>` : ''}</span><span></span></label>`;
+    }).join('');
+    const need = u.need ? ` (${u.need} needed)` : u.need_core ? ' (core 7 + 4)' : '';
+    return `<div class="unit ${done ? 'done' : ''}"><header><b>${esc(u.id)} · ${esc(u.title)}</b><span>${done ? 'done' : `${d}/${u.parts.length}${need}`}</span></header>
+      <p class="note">Done when: ${esc(u.done_when)}</p>${parts}</div>`;
+  };
+  if (!units.length) return '<p class="note">This catalog has no units.</p>';
+  return `<p class="note">${esc(CAT.units_note || 'Tick parts off as you finish them; scored parts count at 4 out of 5 or more.')}${COURSE_URL ? ` Details are in <a href="${esc(COURSE_URL)}" target="_blank" rel="noopener">the course</a>.` : ''}</p>` +
+    groups.map(([ws, title]) => `<section class="ws"><h3>${esc(title)}</h3>${units.filter(u => ws == null || u.ws === ws).map(unitHtml).join('')}</section>`).join('');
+}
+
+/* ---------- events ---------- */
+document.querySelector('.seg').addEventListener('click', e => { const b = e.target.closest('button[data-view]'); if (b) { view = b.dataset.view; render(); window.scrollTo(0, 0); } });
+app.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'f-lang' || t.id === 'f-show') { filt[t.id === 'f-lang' ? 'lang' : 'show'] = t.value; render(); return; }
+  if (t.dataset.tick) { mine.ticks[t.dataset.tick] = { on: t.checked, date: today(), at: isoLocal() }; save(); return; }
+  if (t.dataset.score && t.value) { mine.scores.push({ id: t.dataset.score, score: +t.value, date: today(), at: isoLocal() }); save(); }
+});
+app.addEventListener('submit', e => {
+  const f = e.target.closest('form.log'); if (!f) return;
+  e.preventDefault();
+  const m = /^\s*(\d+)(?::(\d{1,2}))?\s*$/.exec(f.time.value);
+  if (!m) { f.time.setCustomValidity('Minutes, or m:ss'); f.time.reportValidity(); return; }
+  const secs = +m[1] * 60 + (m[2] ? +m[2] : 0);
+  mine.attempts.push({ id: f.dataset.id, lang: f.lang.value, at: isoLocal(), date: today(), secs, runs: f.first.checked ? 1 : 2, first: f.first.checked, passed: f.passed.checked, src: 'app' });
+  save();
+});
+app.addEventListener('input', e => { if (e.target.name === 'time') e.target.setCustomValidity(''); });
+
+/* ---------- start ---------- */
+$('#sub').textContent = '· ' + (CAT.title || 'practice');
+render();
+async function refresh() {
+  try {
+    const d = await window.claude.use('db'); if (!d) return;
+    const [a, b] = await Promise.all([d.doc('drills/attempts').get(), d.doc('drills/app').get()]);
+    if (a.exists) drillLog = a.data();
+    if (b.exists) mine = merge(b.data(), mine);
+    db = d; keep(); render(); setSync('Synced with your private repo');
+  } catch (e) { setSync('Saved on this device'); }
+}
+refresh();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refresh(); });
+window.__drillRender = () => { refresh(); };
+});
+</script>
+</body>
+</html>

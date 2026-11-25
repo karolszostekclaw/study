@@ -11,7 +11,7 @@ const DEFAULTS = {
 };
 const CONTENT_FILES = { deck: 'app-data/content/lemma-deck.txt', desk: 'app-data/content/desk-mfml.json' };
 // profile.json holds how prompts describe you; it stays in the private repo so this public code says nothing about you.
-const OPTIONAL_FILES = { papers: 'app-data/content/papers.json', schedule: 'app-data/content/schedule.json', profile: 'app-data/content/profile.json' };
+const OPTIONAL_FILES = { papers: 'app-data/content/papers.json', schedule: 'app-data/content/schedule.json', profile: 'app-data/content/profile.json', drills: 'app-data/content/drills.json' };
 const FLUSH_DELAY = 20000;
 
 const load = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
@@ -74,16 +74,16 @@ let content = load(K.content, null);
 async function fetchContent() {
   const [deck, desk] = await Promise.all([getFile(CONTENT_FILES.deck), getFile(CONTENT_FILES.desk)]);
   if (deck == null || desk == null) throw new GhError('Content files missing in the repo (app-data/content/)', 404);
-  const [papers, schedule, profile] = await Promise.all([getFile(OPTIONAL_FILES.papers).catch(() => null), getFile(OPTIONAL_FILES.schedule).catch(() => null), getFile(OPTIONAL_FILES.profile).catch(() => null)]);
-  let prof = null; try { prof = profile ? JSON.parse(profile) : null; } catch (e) { prof = null; }
-  let sched = null; try { sched = schedule ? JSON.parse(schedule) : null; } catch (e) { sched = null; }
-  content = { deck, desk: JSON.parse(desk), papers: papers ? JSON.parse(papers).papers : [], schedule: sched, profile: prof, fetchedAt: Date.now() };
+  const opt = k => getFile(OPTIONAL_FILES[k]).catch(() => null);
+  const [papers, schedule, profile, drills] = await Promise.all([opt('papers'), opt('schedule'), opt('profile'), opt('drills')]);
+  const json = t => { try { return t ? JSON.parse(t) : null; } catch (e) { return null; } };
+  content = { deck, desk: JSON.parse(desk), papers: papers ? JSON.parse(papers).papers : [], schedule: json(schedule), profile: json(profile), drills: json(drills), fetchedAt: Date.now() };
   store(K.content, content);
   return content;
 }
 async function getContent({ refresh = false } = {}) {
-  // Copies saved before the Plan tab existed have no schedule: fetch once to pick it up.
-  if (content && !refresh && (content.schedule === undefined || content.profile === undefined) && settings.ghToken && navigator.onLine) return fetchContent().catch(() => content);
+  // Copies saved before a tab existed lack its content (schedule, profile, drills): fetch once to pick it up.
+  if (content && !refresh && (content.schedule === undefined || content.profile === undefined || content.drills === undefined) && settings.ghToken && navigator.onLine) return fetchContent().catch(() => content);
   if (content && !refresh) {
     if (settings.ghToken && Date.now() - (content.fetchedAt || 0) > 6 * 3600e3) fetchContent().catch(() => {});
     return content;
@@ -177,7 +177,8 @@ function makeDb() {
         : /\/progress$/.test(path) ? 'lemma progress'
         : path.startsWith('exams/') ? `checkpoint ${obj.checkpoint || ''} exam (${obj.status || ''})`
         : path.startsWith('papers/') ? 'paper ' + path.slice(7)
-        : path === 'plan' ? 'plan' + (obj.delayDays ? ` (+${obj.delayDays} d delay)` : '') : path;
+        : path === 'plan' ? 'plan' + (obj.delayDays ? ` (+${obj.delayDays} d delay)` : '')
+        : path.startsWith('drills/') ? 'drills' : path;
       queueWrite(fileFor(path), JSON.parse(JSON.stringify(obj)), label);
     }
   });
