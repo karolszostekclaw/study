@@ -32,7 +32,7 @@ main { flex: 1; position: relative; min-height: 0; }
 iframe.screen { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
 [hidden] { display: none !important; }
 
-nav.bar { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
+nav.bar { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding-bottom: env(safe-area-inset-bottom, 0px); }
 nav.bar button { all: unset; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 9px; font-size: .72rem; color: var(--muted); position: relative; -webkit-tap-highlight-color: transparent; }
 nav.bar button svg { width: 23px; height: 23px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 nav.bar button[aria-selected="true"] { color: var(--ink); font-weight: 600; }
@@ -40,10 +40,18 @@ nav.bar button:focus-visible { outline: 2px solid var(--accent); outline-offset:
 nav.bar .dot { position: absolute; top: 6px; left: calc(50% + 9px); width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
 nav.bar .dot.error { background: var(--bad); }
 
-#settings { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#more, #settings { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .page { max-width: 560px; margin: 0 auto; padding: 18px 18px 40px; display: grid; gap: 16px; }
 h1 { font-size: 1.35rem; margin: 4px 0 0; }
 .sub { color: var(--muted); margin: 2px 0 0; }
+.menu { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.menu button { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid; grid-template-columns: 26px 1fr auto; gap: 2px 12px; align-items: center; padding: 13px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; -webkit-tap-highlight-color: transparent; }
+.menu button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.menu svg { grid-row: span 2; width: 24px; height: 24px; stroke: var(--ink); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.menu b { font-weight: 600; }
+.menu small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.menu .badge { grid-row: span 2; grid-column: 3; min-width: 20px; padding: 1px 7px; border-radius: 999px; background: var(--bad); color: #fff; font-size: .74rem; font-weight: 600; text-align: center; }
+.menu .badge.warn { background: var(--warn); }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
 .panel h2 { font-size: 1rem; margin: 0; }
 label { display: grid; gap: 4px; font-size: .86rem; color: var(--muted); }
@@ -70,6 +78,17 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
   <iframe class="screen" id="f-papers" title="Papers" hidden></iframe>
   <iframe class="screen" id="f-plan" title="Plan" hidden></iframe>
   <iframe class="screen" id="f-drill" title="Drill" hidden></iframe>
+  <section id="more" hidden aria-label="More">
+    <div class="page">
+      <div><h1>More</h1></div>
+      <ul class="menu">
+        <li><button data-open="study"><svg viewBox="0 0 24 24"><path d="M3 5.5C5.5 4 9 4 12 6c3-2 6.5-2 9-.5V19c-2.5-1.5-6-1.5-9 .5-3-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/></svg><b>Study</b><small>Lemma review and mini-exams</small></button></li>
+        <li><button data-open="plan"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg><b>Plan</b><small>Weeks, ticks and progress</small></button></li>
+        <li><button data-open="drill"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M12 2.5V6M18.5 6.5l1.5-1.5"/></svg><b>Drill</b><small>Timed drills, re-tests and units</small><span class="badge" id="drill-badge" hidden></span></button></li>
+        <li><button data-open="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><b>Settings and help</b><small>Keys, sync, how each screen works</small><span class="badge warn" id="sync-badge" hidden>!</span></button></li>
+      </ul>
+    </div>
+  </section>
   <section id="settings" hidden aria-label="Settings">
     <div class="page">
       <div><h1>Settings</h1><p class="sub">Keys stay on this device. Cards, problems and your attempts live in your private repo.</p></div>
@@ -147,19 +166,16 @@ code { font-family: var(--f-mono); font-size: .85em; background: var(--bg); padd
 
 <nav class="bar" role="tablist" aria-label="Sections">
   <button role="tab" data-go="feed" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Feed</button>
-  <button role="tab" data-go="study" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M3 5.5C5.5 4 9 4 12 6c3-2 6.5-2 9-.5V19c-2.5-1.5-6-1.5-9 .5-3-2-6.5-2-9-.5z"/><path d="M12 6v13.5"/></svg>Study</button>
   <button role="tab" data-go="desk" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 20h16"/><path d="M14.5 4.5l5 5L10 19H5v-5z"/><path d="M12.5 6.5l5 5"/></svg>Desk</button>
   <button role="tab" data-go="papers" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/><path d="M10 12h5M10 15.5h5M10 9h2"/></svg>Papers</button>
-  <button role="tab" data-go="plan" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg>Plan</button>
-  <button role="tab" data-go="drill" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M10 2.5h4M12 2.5V6M18.5 6.5l1.5-1.5"/></svg>Drill</button>
-  <button role="tab" data-go="settings" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings<span class="dot" id="sync-dot" hidden></span></button>
+  <button role="tab" data-go="more" aria-selected="false"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>More<span class="dot" id="sync-dot" hidden></span></button>
 </nav>
 
 <script src="hub.js"></script>
 <script>
 (() => {
 'use strict';
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 const $ = s => document.querySelector(s);
 const frames = { feed: $('#f-feed'), desk: $('#f-desk'), papers: $('#f-papers'), plan: $('#f-plan'), drill: $('#f-drill') };
 const src = { feed: 'feed.html', desk: 'desk.html', papers: 'papers.html', plan: 'plan.html', drill: 'drill.html' };
@@ -171,9 +187,12 @@ function ensure(name) {
   return f;
 }
 function go(view) {
-  if (!['feed', 'study', 'desk', 'papers', 'plan', 'drill', 'settings'].includes(view)) view = 'feed';
+  if (!['feed', 'study', 'desk', 'papers', 'plan', 'drill', 'settings', 'more'].includes(view)) view = 'feed';
   current = view;
-  document.querySelectorAll('nav.bar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.go === view)));
+  // Study, Plan, Drill and Settings live under More, so More stays highlighted while one of them is open
+  const tab = ['study', 'plan', 'drill', 'settings', 'more'].includes(view) ? 'more' : view;
+  document.querySelectorAll('nav.bar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.go === tab)));
+  $('#more').hidden = view !== 'more';
   const frameName = view === 'study' ? 'feed' : view;
   Object.entries(frames).forEach(([n, f]) => { f.hidden = frameName !== n; });
   $('#settings').hidden = view !== 'settings';
@@ -189,7 +208,15 @@ function go(view) {
   try { localStorage.setItem('study-view', view); } catch (e) {}
 }
 document.querySelector('nav.bar').addEventListener('click', e => { const b = e.target.closest('button[data-go]'); if (b) go(b.dataset.go); });
-window.App = { go, reloadScreens() { Object.entries(frames).forEach(([n, f]) => { if (f.src) f.src = src[n]; }); } };
+$('#more').addEventListener('click', e => { const b = e.target.closest('button[data-open]'); if (b) go(b.dataset.open); });
+// The Drill screen reports how many re-tests are due; show it on the More list and the More button.
+let drillDue = 0, syncWarn = false;
+function badges() {
+  const db = $('#drill-badge'); db.hidden = !drillDue; db.textContent = drillDue;
+  $('#sync-badge').hidden = !syncWarn;
+  $('#sync-dot').hidden = !(drillDue || syncWarn);
+}
+window.App = { drillDue(n) { drillDue = +n || 0; try { localStorage.setItem('study-drill-due', String(drillDue)); } catch (e) {} badges(); }, go, reloadScreens() { Object.entries(frames).forEach(([n, f]) => { if (f.src) f.src = src[n]; }); } };
 
 /* ---------- settings ---------- */
 function fillSettings() {
@@ -234,9 +261,9 @@ $('#forget').addEventListener('click', () => {
 });
 Hub.onStatus(s => {
   $('#sync-status').textContent = s.text || '';
-  const dot = $('#sync-dot');
-  dot.hidden = !['error', 'local', 'offline'].includes(s.state);
-  dot.classList.toggle('error', s.state === 'error');
+  syncWarn = ['error', 'local', 'offline'].includes(s.state);
+  $('#sync-dot').classList.toggle('error', s.state === 'error');
+  badges();
 });
 
 /* ---------- start ---------- */
@@ -245,7 +272,11 @@ try { start = localStorage.getItem('study-view') || 'feed'; } catch (e) {}
 const hashView = location.hash.slice(1);
 if (hashView) start = hashView;
 if (!Hub.settings.ghToken && !localStorage.getItem('study-content-v1')) start = 'settings';
+try { drillDue = +localStorage.getItem('study-drill-due') || 0; } catch (e) {}
+badges();
 go(start);
+// Load the Drill screen quietly once, so the re-test badge is current without opening it.
+setTimeout(() => { if (Hub.settings.ghToken && navigator.onLine) ensure('drill'); }, 4000);
 
 // Pages queued offline are marked by the Desk screen: load it in the background when any wait.
 function queuedCount() { try { return Object.values(JSON.parse(localStorage.getItem('study-markq') || '{}')).reduce((a, b) => a + (+b || 0), 0); } catch (e) { return 0; } }

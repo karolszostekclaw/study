@@ -243,6 +243,7 @@ function render() {
   document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === view)));
   const open = new Set([...document.querySelectorAll('details[open][data-k]')].map(d => d.dataset.k));
   const S = states();
+  try { const n = [...S.values()].filter(x => x.status === 'due').length; window.parent && window.parent.App && window.parent.App.drillDue(n); } catch (e) {}
   app.innerHTML = view === 'today' ? viewToday(S) : view === 'drills' ? viewDrills(S) : viewUnits();
   open.forEach(k => { const d = app.querySelector(`details[data-k="${CSS.escape(k)}"]`); if (d) d.open = true; });
 }

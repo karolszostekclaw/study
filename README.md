@@ -1,6 +1,6 @@
 # Study
 
-An installable web app (PWA) for iPhone and Android with these tabs:
+An installable web app (PWA) for iPhone and Android. The bottom bar has Feed, Desk, Papers and More; Study, Plan, Drill and Settings open from More.
 
 - **Feed:** swipeable cards with spaced repetition (Again / Got it), plus Ask Claude.
 - **Study:** read a topic in order, sit timed mini exams, see saved cards.
